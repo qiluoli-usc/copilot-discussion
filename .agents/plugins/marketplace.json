@@ -1,0 +1,12 @@
+{
+  "name": "copilot-training-local",
+  "interface": { "displayName": "Copilot 主题讨论 · 本地插件" },
+  "plugins": [
+    {
+      "name": "copilot-discussion",
+      "source": { "source": "local", "path": "./plugins/copilot-discussion" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
+    }
+  ]
+}

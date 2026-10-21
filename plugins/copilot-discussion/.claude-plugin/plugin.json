@@ -1,0 +1,27 @@
+{
+  "name": "copilot-discussion",
+  "version": "0.8.0",
+  "description": "主持Microsoft 365 Copilot公开主题研究，保留Jev Native、逐轮问答、恢复及计时。",
+  "author": { "name": "Copilot Training" },
+  "mcpServers": {
+    "copilot-discussion": {
+      "command": "powershell.exe",
+      "args": ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", "${CLAUDE_PLUGIN_ROOT}/skills/copilot-discussion/scripts/mcp-launch.ps1", "-NodeCommand", "${user_config.node_command}"],
+      "env": { "COPILOT_DISCUSSION_CONFIG": "${user_config.config_file}" }
+    }
+  },
+  "userConfig": {
+    "config_file": {
+      "type": "string",
+      "title": "安装配置JSON路径（可留空使用默认位置）",
+      "description": "由setup.mjs生成；留空使用用户目录/.copilot-discussion/config.json。该文件不存API Key。",
+      "default": ""
+    },
+    "node_command": {
+      "type": "string",
+      "title": "Node启动程序",
+      "description": "优先node；找不到时自动读取安装器保存的Node路径，也可填写node.exe绝对路径。",
+      "default": "node"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "copilot-discussion": {
+      "type": "stdio",
+      "command": "powershell.exe",
+      "args": ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", "${PLUGIN_ROOT}/skills/copilot-discussion/scripts/mcp-launch.ps1"]
+    }
+  }
+}

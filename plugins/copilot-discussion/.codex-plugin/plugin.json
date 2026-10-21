@@ -1,0 +1,11 @@
+{
+  "name": "copilot-discussion",
+  "version": "0.8.0",
+  "description": "公开资料研究选题、当前对话主持 Copilot 持续探讨、逐轮保存与阶段计时。",
+  "author": { "name": "Copilot Training" },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Copilot 主题讨论",
+    "shortDescription": "自动提问、读取回答、分析追问和逐轮留档"
+  }
+}

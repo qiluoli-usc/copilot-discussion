@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><title>Copilot Native Synthetic Fixture</title>
+<style>body{font:16px sans-serif;margin:30px;max-width:900px} [role=article]{padding:8px;border-bottom:1px solid #ddd} [role=textbox]{min-height:50px;border:1px solid #777;padding:8px;margin:15px 0} button{padding:8px}</style>
+<h1>仅用于本地测试的模拟聊天</h1>
+<div role="feed" aria-label="Chat conversation" id="messages"></div>
+<div contenteditable="true" role="textbox" aria-label="Message Copilot" id="m365-chat-editor-target-element"></div>
+<button aria-label="Send" id="send" disabled>发送</button>
+<script>
+const editor=document.getElementById('m365-chat-editor-target-element');
+const send=document.getElementById('send');
+let turn=0;
+editor.addEventListener('input',()=>{send.disabled=!editor.innerText.trim()});
+send.addEventListener('click',()=>{
+  const question=editor.innerText.trim();
+  if(!question)return;
+  turn++;
+  function article(role,label,content){
+    const el=document.createElement('div');el.setAttribute('role','article');
+    const heading=document.createElement(role==='user'?'h5':'h6');
+    heading.id=role+'-message-'+turn+'-title';heading.textContent=label;
+    el.setAttribute('aria-labelledby',heading.id);el.append(heading);
+    const paragraph=document.createElement('p');paragraph.textContent=content;el.append(paragraph);
+    if(role==='copilot'){const b=document.createElement('button');b.setAttribute('aria-label','Copy Response');b.textContent='复制';el.append(b)}
+    document.getElementById('messages').append(el);
+  }
+  article('user','You said:',question);
+  article('copilot','Copilot said:','模拟回答 '+turn+'：'+question);
+  editor.textContent='';send.disabled=true;
+});
+</script></html>

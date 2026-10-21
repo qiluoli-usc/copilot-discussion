@@ -1,0 +1,7 @@
+{
+  "name": "copilot-training-local",
+  "owner": { "name": "Copilot Training" },
+  "plugins": [
+    { "name": "copilot-discussion", "source": "./plugins/copilot-discussion", "description": "公开研究选题、Jev Native持续讨论与完整计时。" }
+  ]
+}

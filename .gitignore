@@ -1,0 +1,24 @@
+# Local research, installations and build artifacts
+output/
+**/__pycache__/
+**/.venv/
+**/node_modules/
+*.tmp
+*.partial
+
+# User configuration and credentials
+.env
+.env.*
+!.env.example
+config.json
+config.local.json
+*.pfx
+*.p12
+*.key
+*.pem
+
+# Binary distributions belong in GitHub Releases
+*.exe
+*.msi
+*.msix
+*.zip

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Copilot 主题讨论"
+  short_description: "由当前对话自动主持 Copilot 多轮主题讨论，读取回答并追问，逐轮保存与恢复"
+  default_prompt: "使用 $copilot-discussion，围绕当前主题与 Copilot 新对话自动讨论 8 轮，读取回答后持续追问并总结。"

@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "platform": "win32",
+  "arch": "x64",
+  "python": {
+    "version": "3.12.15",
+    "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261013/cpython-3.12.15%2B20261013-x86_64-pc-windows-msvc-install_only_stripped.tar.gz",
+    "sha256": "7a2aef48e5ee569e310b29b32681debbc5d888e92790d85331a47736c6b06aad",
+    "folder": "python"
+  },
+  "chrome": {
+    "version": "155.0.8059.85",
+    "url": "https://dl.google.com/release2/chrome/ps7jv2y4q3yo32dl6v6liqauri_155.0.8059.85/155.0.8059.85_chrome_installer_uncompressed.exe",
+    "sha256": "2a9b18526096b614fbfda4324280fc69316e42dcb0668301f2cd8a4524054664",
+    "manifest": "https://raw.githubusercontent.com/microsoft/winget-pkgs/master/manifests/g/Google/Chrome/EXE/155.0.8059.85/Google.Chrome.EXE.installer.yaml",
+    "terms": "https://www.google.com/chrome/terms/"
+  }
+}

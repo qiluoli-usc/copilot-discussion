@@ -1,0 +1,17 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "copilot-discussion",
+  "version": "0.8.0",
+  "description": "由当前Agent从免费公开资料选题并主持Microsoft 365 Copilot持续讨论，支持Jev Native、本地MCP、完整问答与计时。",
+  "author": { "name": "Copilot Training" },
+  "keywords": ["copilot", "discussion", "browser", "research"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Copilot 主题讨论",
+        "shortDescription": "当前对话自动主持 Copilot 多轮讨论并保存结果",
+        "defaultPrompt": ["围绕当前主题，与 Copilot 新对话自动讨论 8 轮并总结。"]
+      }
+    }
+  }
+}

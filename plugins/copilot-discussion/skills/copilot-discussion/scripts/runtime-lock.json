@@ -1,0 +1,18 @@
+{
+  "jev": {
+    "commit": "1231850a0bf1a0c0341fe408ef1668dbbfdfac46",
+    "url": "https://codeload.github.com/browser-use/jev-ultrafast/zip/1231850a0bf1a0c0341fe408ef1668dbbfdfac46",
+    "sha256": "61e3edab5be79a857647660bd24e60127b9a5881d71cf81f2c7d98bd99202b9d",
+    "folder": "jev-ultrafast-1231850a0bf1a0c0341fe408ef1668dbbfdfac46"
+  },
+  "uv": {
+    "version": "0.13.4",
+    "x64": { "url": "https://github.com/astral-sh/uv/releases/download/0.13.4/uv-x86_64-pc-windows-msvc.zip", "sha256": "ccec7508a07d9933d7cb1261880633efcf1f30d6e6eddab21823f1dae6f23225" },
+    "arm64": { "url": "https://github.com/astral-sh/uv/releases/download/0.13.4/uv-aarch64-pc-windows-msvc.zip", "sha256": "c4bc5a9534b2bb6a12fe29ea748445e1a6f9cb7bb275211c4fb74c52ecf317a5" }
+  },
+  "node": {
+    "version": "24.22.0",
+    "x64": { "url": "https://nodejs.org/dist/v24.22.0/node-v24.22.0-win-x64.zip", "sha256": "f9683a19877e12a9b167305c8db71040d812876359de21f0d2e97c3f321f80c3", "folder": "node-v24.22.0-win-x64" },
+    "arm64": { "url": "https://nodejs.org/dist/v24.22.0/node-v24.22.0-win-arm64.zip", "sha256": "3a5c209a5bc59e65b3bc0fa13ed5e166a26bd3d55332847f498b76b037408d61", "folder": "node-v24.22.0-win-arm64" }
+  }
+}
