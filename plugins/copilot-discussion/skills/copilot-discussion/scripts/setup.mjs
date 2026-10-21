@@ -32,7 +32,7 @@ export function profiles({ node = process.execPath, serverFile = path.join(scrip
     github: { mcpServers: { 'copilot-discussion': { ...server, type: 'local', tools: ['*'] } } },
     vscode: { servers: { 'copilot-discussion': server } },
     codex: `[mcp_servers.copilot-discussion]\ncommand = ${JSON.stringify(node)}\nargs = ${JSON.stringify(server.args)}\ntool_timeout_sec = 60\n`,
-    dsh: `- id: copilot-discussion-mcp\n  name: '@deepseek-ai/dsh-mcp-client'\n  config:\n    serverName: copilot-discussion\n    transport: stdio\n    command: ${JSON.stringify(node)}\n    args: ${JSON.stringify(server.args)}\n    toolCallTimeoutMs: 60000\n`
+    dsh: `- insert:\n    - id: copilot-discussion-mcp\n      name: '@deepseek-ai/dsh-mcp-client'\n      config:\n        serverName: copilot-discussion\n        transport: stdio\n        command: ${JSON.stringify(node)}\n        args: ${JSON.stringify(server.args)}\n        toolCallTimeoutMs: 60000\n`
   };
 }
 

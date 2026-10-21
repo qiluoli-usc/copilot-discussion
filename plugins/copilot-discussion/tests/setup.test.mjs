@@ -32,7 +32,9 @@ test('安装生成可用绝对路径和各宿主正确格式，可重复执行�
   const vscode = JSON.parse(await fs.readFile(path.join(f.output, 'vscode-mcp.json'), 'utf8'));
   assert.deepEqual(github.mcpServers['copilot-discussion'].tools, ['*']);
   assert.ok(vscode.servers); assert.equal(vscode.mcpServers, undefined);
-  assert.match(await fs.readFile(path.join(f.output, 'dsh.yaml'), 'utf8'), /@deepseek-ai\/dsh-mcp-client/u);
+  const dsh = await fs.readFile(path.join(f.output, 'dsh.yaml'), 'utf8');
+  assert.match(dsh, /^- insert:\n    - id: copilot-discussion-mcp\n/u);
+  assert.match(dsh, /@deepseek-ai\/dsh-mcp-client/u);
   await setup(options);
   const original = await fs.readFile(f.config, 'utf8');
   await assert.rejects(setup({ ...options, workspace: path.join(f.root, 'other') }), /已有不同配置/u);
