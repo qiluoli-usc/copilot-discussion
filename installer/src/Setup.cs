@@ -56,10 +56,10 @@ internal static class Program
         {
             if (args.Length == 2 && args[0].StartsWith("--", StringComparison.Ordinal))
             {
-                File.WriteAllText(args[1] + ".error.txt", e.Message, Utf8);
+                File.WriteAllText(args[1] + ".error.txt", e.ToString(), Utf8);
                 return 1;
             }
-            MessageBox.Show(e.Message, "安装未完成", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(e.GetBaseException().Message, "安装未完成", MessageBoxButtons.OK, MessageBoxIcon.Error);
             return 1;
         }
     }
@@ -78,7 +78,7 @@ internal static class Engine
                 var labels = new List<string>();
                 var user = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
                 var pathDirs = (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator);
-                foreach (var value in (object[])catalog["hosts"])
+                foreach (var value in (System.Collections.IEnumerable)catalog["hosts"])
                 {
                     var spec = (Dictionary<string, object>)value;
                     Func<string, string> get = key => spec.ContainsKey(key) ? Convert.ToString(spec[key]) : null;
@@ -87,7 +87,7 @@ internal static class Engine
                     var found = Directory.Exists(folder);
                     if (get("id") == "github-copilot") found = File.Exists(Path.Combine(folder, "mcp-config.json")) || File.Exists(Path.Combine(folder, "config.json"));
                     if (get("configHome") != null) found |= File.Exists(Path.Combine(user, get("configHome")));
-                    foreach (var command in (object[])spec["commands"])
+                    foreach (var command in (System.Collections.IEnumerable)spec["commands"])
                         foreach (var dir in pathDirs.Where(p => !String.IsNullOrWhiteSpace(p) && Path.IsPathRooted(p)))
                             foreach (var ext in new[] { ".exe", ".cmd", ".bat" }) found |= File.Exists(Path.Combine(dir, Convert.ToString(command) + ext));
                     if (found) labels.Add(get("label"));
@@ -283,12 +283,12 @@ internal static class HostInstructions
             using (var reader = new StreamReader(stream, Program.Utf8))
             {
                 var data = Program.Json.Deserialize<Dictionary<string, object>>(reader.ReadToEnd());
-                if (((object[])data["hosts"]).Length != 7) throw new InvalidDataException("安装程序内置宿主说明不完整。");
+                if (((System.Collections.IEnumerable)data["hosts"]).Cast<object>().Count() != 7) throw new InvalidDataException("安装程序内置宿主说明不完整。");
                 return data;
             }
         }
     }
-    internal static IEnumerable<Dictionary<string, object>> Hosts { get { return ((object[])Data["hosts"]).Cast<Dictionary<string, object>>(); } }
+    internal static IEnumerable<Dictionary<string, object>> Hosts { get { return ((System.Collections.IEnumerable)Data["hosts"]).Cast<Dictionary<string, object>>(); } }
     internal static string TextFor(string id)
     {
         var item = Hosts.FirstOrDefault(h => (string)h["id"] == id);

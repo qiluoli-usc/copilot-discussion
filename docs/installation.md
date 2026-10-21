@@ -17,7 +17,7 @@
 
 ```text
 CopilotDiscussion/
-├─ versions/0.9.0-host-guide.1/
+├─ versions/0.9.0-host-guide.2/
 │  ├─ CopilotDiscussion.exe          后续配置与授权检查界面
 │  ├─ product/                      完整插件、技能、文档、构建源码
 │  ├─ tools/{node,uv,python}/        独立运行时及原许可
@@ -28,7 +28,7 @@ CopilotDiscussion/
 └─ setup-state.json                  最近一次安装状态与阶段耗时
 ```
 
-用户配置仍在 `~/.copilot-discussion/`，研究保存在所选工作区 `output/research-runs/`。在另一电脑运行安装程序重新生成路径，不能直接复制旧 MCP 模板。单独的 `CopilotDiscussion-0.9.0-Plugin.zip` 用于支持本地插件/技能导入的宿主；它不包含大型运行时。宿主说明修订包位于 `output/releases/v090-host-guide/`，GitHub标记为 `v0.9.0-preview.2`；原预览包仍保留在 `v0.9.0-preview`。修订包使用独立产品目录，已有运行环境可复用，避免继续读取旧版说明。生成的开始菜单入口可重开向导和使用指南。宿主接入登记与备份仅保存在本机 `~/.copilot-discussion/host-integrations/`。
+用户配置仍在 `~/.copilot-discussion/`，研究保存在所选工作区 `output/research-runs/`。在另一电脑运行安装程序重新生成路径，不能直接复制旧 MCP 模板。单独的 `CopilotDiscussion-0.9.0-Plugin.zip` 用于支持本地插件/技能导入的宿主；它不包含大型运行时。宿主说明修订包位于 `output/releases/v090-host-guide-fix/`，GitHub标记为 `v0.9.0-preview.3`；原预览包仍保留在 `v0.9.0-preview`。修订包使用独立产品目录，已有运行环境可复用，避免继续读取旧版说明。生成的开始菜单入口可重开向导和使用指南。宿主接入登记与备份仅保存在本机 `~/.copilot-discussion/host-integrations/`。
 
 当前交付为未签名测试包。普通环境可能显示未知发布者；启用 Smart App Control 或企业代码完整性策略的电脑可能直接阻止启动。此前v0.8最终包已经遇到 `VerifiedAndReputableDesktop` 策略拦截；v0.9不改变信任状态，不能保证换一台电脑即可运行。正式分发应使用受信任签名渠道对安装程序和管理器签名，并在目标策略下复验；不要求关闭安全策略或安装自签名根证书。签名构建步骤见下方构建说明及 [Microsoft 官方要求](https://learn.microsoft.com/en-us/windows/apps/develop/smart-app-control/code-signing-for-smart-app-control)。SHA256用于文件完整性，不能替代签名。Google 原始安装包签名保持不变。
 
