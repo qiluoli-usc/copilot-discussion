@@ -14,8 +14,8 @@ using System.Windows.Forms;
 
 [assembly: AssemblyTitle("Copilot 主题讨论安装程序")]
 [assembly: AssemblyDescription("Windows x64 · Jev Native · 离线安装与宿主配置")]
-[assembly: AssemblyVersion("0.8.0.0")]
-[assembly: AssemblyFileVersion("0.8.0.0")]
+[assembly: AssemblyVersion("0.9.0.0")]
+[assembly: AssemblyFileVersion("0.9.0.0")]
 
 internal static class Program
 {
@@ -67,6 +67,36 @@ internal static class Program
 
 internal static class Engine
 {
+    internal static string DetectHostSummary()
+    {
+        try
+        {
+            using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("hosts.json"))
+            using (var reader = new StreamReader(stream, Program.Utf8))
+            {
+                var catalog = Program.Json.Deserialize<Dictionary<string, object>>(reader.ReadToEnd());
+                var labels = new List<string>();
+                var user = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                var pathDirs = (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator);
+                foreach (var value in (object[])catalog["hosts"])
+                {
+                    var spec = (Dictionary<string, object>)value;
+                    Func<string, string> get = key => spec.ContainsKey(key) ? Convert.ToString(spec[key]) : null;
+                    var custom = get("homeEnv") == null ? null : Environment.GetEnvironmentVariable(get("homeEnv"));
+                    var folder = get("appData") != null ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), get("appData")) : custom ?? Path.Combine(user, get("home"));
+                    var found = Directory.Exists(folder);
+                    if (get("id") == "github-copilot") found = File.Exists(Path.Combine(folder, "mcp-config.json")) || File.Exists(Path.Combine(folder, "config.json"));
+                    if (get("configHome") != null) found |= File.Exists(Path.Combine(user, get("configHome")));
+                    foreach (var command in (object[])spec["commands"])
+                        foreach (var dir in pathDirs.Where(p => !String.IsNullOrWhiteSpace(p) && Path.IsPathRooted(p)))
+                            foreach (var ext in new[] { ".exe", ".cmd", ".bat" }) found |= File.Exists(Path.Combine(dir, Convert.ToString(command) + ext));
+                    if (found) labels.Add(get("label"));
+                }
+                return labels.Count > 0 ? String.Join("、", labels) : "尚未发现已配置宿主；安装后仍可生成模板，稍后重新检测。";
+            }
+        }
+        catch { return "将在运行环境准备完成后重新检测；不会扫描磁盘或读取账号凭据。"; }
+    }
     internal static string Quote(string value)
     {
         var result = new StringBuilder("\""); int slashes = 0;
@@ -201,7 +231,21 @@ internal static class Engine
             result["installerStartedAt"] = started.ToString("o"); result["installerElapsedMs"] = (DateTime.UtcNow - started).TotalMilliseconds;
             result["installRoot"] = root; result["payloadRoot"] = payload;
             result["installerStages"] = new { payloadPrepareMs = payloadElapsed, backendMs = (DateTime.UtcNow - backendStarted).TotalMilliseconds };
-            File.WriteAllText(Path.Combine(root, "setup-state.json"), Program.Json.Serialize(result), Program.Utf8);
+            var statePath = Path.Combine(root, "setup-state.json");
+            result["productVersion"] = BuildInfo.Version;
+            // An idempotent reconfigure keeps the last reversible transaction.
+            try
+            {
+                var currentInfo = (Dictionary<string, object>)result["hostIntegration"];
+                if (currentInfo["rollbackFile"] == null && Convert.ToInt32(currentInfo["changedFiles"]) == 0 && File.Exists(statePath))
+                {
+                    var previous = Program.Json.Deserialize<Dictionary<string, object>>(File.ReadAllText(statePath, Program.Utf8));
+                    var previousInfo = previous.ContainsKey("hostIntegration") ? previous["hostIntegration"] as Dictionary<string, object> : null;
+                    if (previousInfo != null && previousInfo["rollbackFile"] is string) currentInfo["rollbackFile"] = previousInfo["rollbackFile"];
+                }
+            }
+            catch { }
+            File.WriteAllText(statePath, Program.Json.Serialize(result), Program.Utf8);
             object shortcuts;
             if (request.TryGetValue("shortcuts", out shortcuts) && Convert.ToBoolean(shortcuts))
             {
@@ -213,7 +257,7 @@ internal static class Engine
                 }
                 catch { log("开始菜单入口创建受限；仍可从安装目录打开使用指南。"); }
             }
-            log("软件安装完成。请继续完成浏览器授权和宿主接入。");
+            log("软件安装完成。宿主接入状态见使用指南，请继续完成浏览器授权和登录。");
             return result;
         }
     }
@@ -229,18 +273,18 @@ internal static class Engine
 
 internal sealed class SetupForm : Form
 {
-    readonly TextBox root = new TextBox(), workspace = new TextBox(), skillsDir = new TextBox(), log = new TextBox();
+    readonly TextBox root = new TextBox(), workspace = new TextBox(), detected = new TextBox(), log = new TextBox();
     readonly ComboBox host = new ComboBox();
     readonly CheckBox chrome = new CheckBox(), skills = new CheckBox(), reuse = new CheckBox(), shortcuts = new CheckBox();
-    readonly Button install = new Button(), guide = new Button(), copy = new Button(), check = new Button(), browse = new Button();
+    readonly Button install = new Button(), guide = new Button(), copy = new Button(), check = new Button(), browse = new Button(), undo = new Button();
     readonly ProgressBar progress = new ProgressBar();
     readonly string config = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".copilot-discussion", "config.json");
-    readonly string[] hosts = { "generic", "codex", "claude-code", "workbuddy", "dsh", "qwenwork", "github-copilot", "vscode" };
+    readonly string[] hosts = { "auto", "generic", "codex", "claude-code", "workbuddy", "dsh", "qwenwork", "github-copilot", "vscode" };
     Dictionary<string, object> result; bool busy;
     internal SetupForm()
     {
         Text = "Copilot 主题讨论 · 安装向导 " + BuildInfo.Version; Font = new Font("Microsoft YaHei UI", 10F);
-        AutoScaleMode = AutoScaleMode.Dpi; ClientSize = new Size(850, 720); MinimumSize = new Size(820, 700); StartPosition = FormStartPosition.CenterScreen;
+        AutoScaleMode = AutoScaleMode.Dpi; ClientSize = new Size(960, 760); MinimumSize = new Size(920, 720); StartPosition = FormStartPosition.CenterScreen;
         BackColor = Color.FromArgb(246, 248, 252);
         var layout = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(24), ColumnCount = 3, RowCount = 13 };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 116)); layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 84));
@@ -254,9 +298,9 @@ internal sealed class SetupForm : Form
         workspace.Text = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "CopilotResearch");
         try { var old = Program.Json.Deserialize<Dictionary<string, object>>(File.ReadAllText(config, Program.Utf8)); object value; if (old.TryGetValue("workspaceDir", out value) && value is string) workspace.Text = (string)value; } catch { }
         Field(layout, "安装目录", root, 2, true); Field(layout, "研究工作区", workspace, 3, true);
-        host.DropDownStyle = ComboBoxStyle.DropDownList; host.Items.AddRange(new object[] { "通用 MCP / 稍后接入", "Codex", "Claude Code", "WorkBuddy", "DSH", "QwenWork", "GitHub Copilot CLI", "VS Code GitHub Copilot" }); host.SelectedIndex = 0; Field(layout, "主持宿主", host, 4, false);
-        skills.Text = "为所选宿主安装两个研究技能"; skills.AutoSize = true; Span(layout, skills, 5);
-        skillsDir.PlaceholderCompat("WorkBuddy 请在勾选技能安装后选择实际技能目录"); Field(layout, "技能目录", skillsDir, 6, true);
+        host.DropDownStyle = ComboBoxStyle.DropDownList; host.Items.AddRange(new object[] { "自动检测并接入已安装宿主", "通用 MCP / 稍后接入", "Codex", "Claude Code", "WorkBuddy", "DSH", "QwenWork", "GitHub Copilot CLI", "VS Code GitHub Copilot" }); host.SelectedIndex = 0; Field(layout, "主持宿主", host, 4, false);
+        skills.Text = "自动合并 MCP 并安装两个研究技能（保留现有设置，改动前备份）"; skills.AutoSize = true; Span(layout, skills, 5);
+        detected.ReadOnly = true; detected.Text = Engine.DetectHostSummary(); Field(layout, "检测结果", detected, 6, false);
         reuse.Text = "优先复用本机已有 Jev 环境"; reuse.Checked = true; shortcuts.Text = "创建开始菜单入口"; shortcuts.Checked = true;
         var options = new FlowLayoutPanel { Dock = DockStyle.Fill }; options.Controls.Add(reuse); options.Controls.Add(shortcuts); reuse.AutoSize = shortcuts.AutoSize = true; Span(layout, options, 7);
         chrome.Text = "缺少 Chrome 时安装随包的 Google Chrome（已有浏览器直接复用）"; chrome.Checked = true; chrome.AutoSize = true;
@@ -264,25 +308,40 @@ internal sealed class SetupForm : Form
         var terms = new LinkLabel { Text = "Google Chrome 条款", AutoSize = true }; terms.LinkClicked += delegate { Open("https://www.google.com/chrome/terms/"); }; chromeBox.Controls.Add(terms); Span(layout, chromeBox, 8);
         progress.Dock = DockStyle.Fill; Span(layout, progress, 9);
         log.Multiline = true; log.ReadOnly = true; log.ScrollBars = ScrollBars.Vertical; log.Dock = DockStyle.Fill; log.BackColor = Color.White; Span(layout, log, 10);
-        Span(layout, new Label { Text = "浏览器远程调试、Allow 及 Microsoft 登录由你完成。默认无需 Jev API Key。", Dock = DockStyle.Fill, ForeColor = Color.FromArgb(72, 90, 112) }, 11);
+        Span(layout, new Label { Text = "浏览器授权和登录由你完成。部分宿主仍需信任确认或一次导入，结果见使用指南。", Dock = DockStyle.Fill, ForeColor = Color.FromArgb(72, 90, 112) }, 11);
         var buttons = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft };
-        install.Text = Engine.HasPayload ? "开始安装" : "保存配置"; guide.Text = "使用指南"; copy.Text = "复制 MCP"; check.Text = "授权检查"; browse.Text = "打开目录";
-        foreach (var b in new[] { install, guide, copy, check, browse }) { b.AutoSize = true; b.Height = 34; buttons.Controls.Add(b); }
+        install.Text = Engine.HasPayload ? "开始安装" : "保存配置"; guide.Text = "使用指南"; copy.Text = "复制 MCP"; check.Text = "授权检查"; browse.Text = "打开目录"; undo.Text = "撤销接入";
+        foreach (var b in new[] { install, guide, copy, check, browse, undo }) { b.AutoSize = true; b.Height = 34; buttons.Controls.Add(b); }
         Span(layout, buttons, 12);
-        guide.Enabled = copy.Enabled = check.Enabled = browse.Enabled = false;
+        guide.Enabled = copy.Enabled = check.Enabled = browse.Enabled = undo.Enabled = false;
         install.Click += async delegate { await Install(); };
         guide.Click += delegate { Open((string)result["guideFile"]); };
         copy.Click += delegate { Clipboard.SetText((string)result["profileText"]); Append("已复制所选宿主配置，请在宿主的 MCP 配置界面中导入。"); };
         browse.Click += delegate { Open((string)result["outputDir"]); };
         check.Click += async delegate { await Check(); };
+        undo.Click += async delegate { await Undo(); };
         host.SelectedIndexChanged += delegate { SkillsState(); };
-        skills.CheckedChanged += delegate { skillsDir.Enabled = skills.Checked && host.SelectedIndex == 3; };
         SkillsState();
+        try
+        {
+            var stateFile = Path.Combine(root.Text, "setup-state.json");
+            if (File.Exists(stateFile))
+            {
+                var previous = Program.Json.Deserialize<Dictionary<string, object>>(File.ReadAllText(stateFile, Program.Utf8));
+                if (Convert.ToString(previous["installRoot"]) == Path.GetFullPath(root.Text) && File.Exists(Convert.ToString(previous["guideFile"])) && Directory.Exists(Convert.ToString(previous["payloadRoot"])))
+                {
+                    result = previous; guide.Enabled = copy.Enabled = browse.Enabled = check.Enabled = true; undo.Enabled = HasRollback();
+                    Append("已读取上次安装结果，可查看指南、授权检查或撤销接入。");
+                }
+            }
+        }
+        catch { }
+        root.TextChanged += delegate { if (!busy) { result = null; guide.Enabled = copy.Enabled = browse.Enabled = check.Enabled = undo.Enabled = false; } };
         Append("软件组件可离线安装；公开资料与 Copilot 对话需要联网。");
         Append("此包支持 Windows 10 / 11 x64，安装期间不会向 Copilot 发问。");
         FormClosing += delegate(object sender, FormClosingEventArgs e) { if (busy) { e.Cancel = true; Append("正在写入安装文件，请等待当前步骤完成后关闭。"); } };
     }
-    void SkillsState() { skills.Enabled = host.SelectedIndex != 0; skills.Checked = host.SelectedIndex != 0 && host.SelectedIndex != 3; skillsDir.Enabled = skills.Checked && host.SelectedIndex == 3; }
+    void SkillsState() { skills.Enabled = host.SelectedIndex != 1; skills.Checked = host.SelectedIndex != 1; }
     static void Span(TableLayoutPanel layout, Control c, int row) { layout.Controls.Add(c, 0, row); layout.SetColumnSpan(c, 3); }
     static void Field(TableLayoutPanel layout, string label, Control field, int row, bool folder)
     {
@@ -291,18 +350,18 @@ internal sealed class SetupForm : Form
         else layout.SetColumnSpan(field, 2);
     }
     void Append(string message) { if (InvokeRequired) { BeginInvoke((Action<string>)Append, message); return; } log.AppendText(DateTime.Now.ToString("HH:mm:ss") + "  " + message + Environment.NewLine); }
-    void Busy(bool value) { busy = value; install.Enabled = !value; progress.Style = value ? ProgressBarStyle.Marquee : ProgressBarStyle.Blocks; progress.Value = value ? 0 : 100; root.Enabled = workspace.Enabled = host.Enabled = chrome.Enabled = reuse.Enabled = shortcuts.Enabled = !value; check.Enabled = !value && result != null; }
+    bool HasRollback() { object item; if (result == null || !result.TryGetValue("hostIntegration", out item)) return false; var info = item as Dictionary<string, object>; return info != null && info.ContainsKey("rollbackFile") && info["rollbackFile"] is string; }
+    void Busy(bool value) { busy = value; install.Enabled = !value; progress.Style = value ? ProgressBarStyle.Marquee : ProgressBarStyle.Blocks; progress.Value = value ? 0 : 100; root.Enabled = workspace.Enabled = host.Enabled = chrome.Enabled = reuse.Enabled = shortcuts.Enabled = !value; skills.Enabled = !value && host.SelectedIndex != 1; check.Enabled = !value && result != null; undo.Enabled = !value && HasRollback(); }
     async Task Install()
     {
         try
         {
             if (!Path.IsPathRooted(root.Text) || !Path.IsPathRooted(workspace.Text)) throw new InvalidOperationException("请选择完整的安装目录和研究工作区路径。");
-            if (skills.Checked && host.SelectedIndex == 3 && !Path.IsPathRooted(skillsDir.Text)) throw new InvalidOperationException("WorkBuddy 技能安装需要选择实际技能目录，也可取消此选项后从宿主界面导入。");
-            var request = new Dictionary<string, object> { { "installRoot", root.Text }, { "workspace", workspace.Text }, { "config", config }, { "host", hosts[host.SelectedIndex] }, { "installChrome", chrome.Checked }, { "installSkills", skills.Checked }, { "skillsDir", skillsDir.Enabled ? skillsDir.Text : null }, { "reuseEnvironment", reuse.Checked }, { "shortcuts", shortcuts.Checked } };
+            var request = new Dictionary<string, object> { { "installRoot", root.Text }, { "workspace", workspace.Text }, { "config", config }, { "host", hosts[host.SelectedIndex] }, { "installChrome", chrome.Checked }, { "autoConnectHosts", skills.Checked }, { "reuseEnvironment", reuse.Checked }, { "shortcuts", shortcuts.Checked } };
             Busy(true); result = await Task.Run(() => Engine.Install(request, Append));
             guide.Enabled = copy.Enabled = browse.Enabled = true;
             Append("本次完整安装耗时 " + (Convert.ToDouble(result["installerElapsedMs"]) / 1000).ToString("F3") + " 秒。");
-            Append("点击“使用指南”接入宿主。首次连接前，请在 Chrome 启用远程调试并批准 Allow。");
+            Append("宿主已按检测结果自动接入，详情与待处理项见“使用指南”。请重新加载宿主，完成 Chrome 授权与登录。");
         }
         catch (Exception e) { Append("安装未完成：" + e.Message); MessageBox.Show(e.Message, "安装未完成", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
         finally { Busy(false); }
@@ -320,10 +379,31 @@ internal sealed class SetupForm : Form
         catch (Exception e) { Append(e.Message); }
         finally { Busy(false); }
     }
+    async Task Undo()
+    {
+        if (!HasRollback()) return;
+        try
+        {
+            Busy(true);
+            var info = (Dictionary<string, object>)result["hostIntegration"];
+            var requestFile = Path.Combine((string)result["outputDir"], "host-rollback-request.json");
+            File.WriteAllText(requestFile, Program.Json.Serialize(new { journalFile = (string)info["rollbackFile"] }), Program.Utf8);
+            var payload = (string)result["payloadRoot"];
+            var value = await Task.Run(() => Engine.Run(Path.Combine(payload, "tools", "node", "node.exe"), Path.Combine(payload, "installer", "app", "hosts.mjs"), requestFile, Append));
+            Append(Convert.ToString(value["message"]));
+            if (Convert.ToString(value["status"]) == "rolled-back")
+            {
+                info["rollbackFile"] = null;
+                File.WriteAllText(Path.Combine((string)result["installRoot"], "setup-state.json"), Program.Json.Serialize(result), Program.Utf8);
+            }
+        }
+        catch (Exception e) { Append(e.Message); }
+        finally { Busy(false); }
+    }
     static void Open(string target) { try { Process.Start(new ProcessStartInfo(target) { UseShellExecute = true }); } catch (Exception e) { MessageBox.Show(e.Message); } }
     internal object SelfTest()
     {
-        if (install.Text.Length == 0 || host.Items.Count != 8 || ClientSize.Width < 800 || log.Height < 80 || install.Width < 60) throw new InvalidOperationException("安装界面自检失败。");
+        if (install.Text.Length == 0 || host.Items.Count != 9 || host.SelectedIndex != 0 || !skills.Checked || ClientSize.Width < 800 || log.Height < 80 || install.Width < 60) throw new InvalidOperationException("安装界面自检失败。");
         bool traversal = false; try { Engine.Child(Path.GetTempPath(), "../escape"); } catch (InvalidDataException) { traversal = true; }
         if (!traversal || Engine.Quote("a b\\") != "\"a b\\\\\"") throw new InvalidOperationException("路径或参数保护自检失败。");
         return new { passed = true, version = BuildInfo.Version, hasEmbeddedPayload = Engine.HasPayload, hostCount = host.Items.Count, clientWidth = ClientSize.Width, clientHeight = ClientSize.Height, controls = Flatten(this).Select(c => new { type = c.GetType().Name, text = c is TextBox ? "" : c.Text, width = c.Width, height = c.Height }).ToArray() };

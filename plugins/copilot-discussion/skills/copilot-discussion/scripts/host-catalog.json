@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "verifiedAt": "2026-10-21",
+  "hosts": [
+    { "id": "codex", "label": "Codex", "home": ".codex", "homeEnv": "CODEX_HOME", "commands": ["codex"], "format": "toml", "config": "config.toml", "skillsHome": ".agents/skills", "source": "https://learn.chatgpt.com/docs/extend/mcp?surface=cli" },
+    { "id": "claude-code", "label": "Claude Code", "home": ".claude", "homeEnv": "CLAUDE_CONFIG_DIR", "commands": ["claude"], "format": "json", "configHome": ".claude.json", "skillsHome": ".claude/skills", "source": "https://code.claude.com/docs/en/mcp" },
+    { "id": "workbuddy", "label": "WorkBuddy", "home": ".workbuddy", "commands": ["workbuddy"], "format": "json", "config": "mcp.json", "existingConfig": ".mcp.json", "skills": "skills", "skillsRequireExisting": true, "source": "https://www.workbuddy.ai/docs/zh/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/MCP-Guide" },
+    { "id": "github-copilot", "label": "GitHub Copilot CLI", "home": ".copilot", "homeEnv": "COPILOT_HOME", "commands": ["copilot"], "format": "json", "config": "mcp-config.json", "skills": "skills", "source": "https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers" },
+    { "id": "vscode", "label": "VS Code GitHub Copilot", "appData": "Code/User", "commands": ["code"], "format": "jsonc", "config": "mcp.json", "skillsHome": ".copilot/skills", "source": "https://code.visualstudio.com/docs/agents/reference/mcp-configuration" },
+    { "id": "qwenwork", "label": "QwenWork", "home": ".qwenworkcn", "commands": ["qwenwork"], "format": "manual", "skills": "skills", "reason": "公开文档未提供稳定的 MCP 文件注册接口；已准备本机配置，请在连接器界面导入一次。", "source": "https://docs.qwenwork.cn/features/connectors" },
+    { "id": "dsh", "label": "DSH", "home": ".dsh", "homeEnv": "DSH_HOME", "commands": ["dsh"], "format": "manual", "skills": "skills", "reason": "DSH 的 profile 与桌面组合方式不同；已生成 overlay，需按实际 profile 接入，不能仅写入一个通用文件就宣称生效。", "source": "https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/cli-help.md" }
+  ]
+}

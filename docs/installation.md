@@ -1,15 +1,15 @@
 # 安装与使用
 
-本包 v0.8.0 提供 Windows 图形离线安装程序、自动环境准备、标准本地 MCP 和两个 Skill，并提供 Codex、Claude Code、GitHub Copilot CLI 的插件清单。WorkBuddy、DSH、QwenWork、VS Code 使用各自支持的 MCP/Skill 接入。实际验证范围与官方依据见 [兼容性说明](compatibility.md)。
+本包 v0.9.0 提供 Windows 图形离线安装程序、自动环境准备、标准本地 MCP 和两个 Skill，并提供 Codex、Claude Code、GitHub Copilot CLI 的插件清单。WorkBuddy、DSH、QwenWork、VS Code 使用各自支持的 MCP/Skill 接入。实际验证范围与官方依据见 [兼容性说明](compatibility.md)。
 
 ## 图形安装（无需命令行）
 
-1. 把 `CopilotDiscussion-0.8.0-Setup-win-x64.exe` 复制到目标 Windows 10 / 11 x64 电脑，双击运行。无需预装 Node、Python、uv、Git 或 Jev 技能；系统需具备 Windows 自带的 .NET Framework 4.8 和 Windows PowerShell 5.1。
-2. 选择专用安装目录、研究工作区和主持宿主，点击“开始安装”。默认安装在当前用户目录；可复用配置中已验证的 Jev 环境。若需要完全独立环境，取消“优先复用”。
+1. 把 `CopilotDiscussion-0.9.0-Setup-win-x64.exe` 复制到目标 Windows 10 / 11 x64 电脑，双击运行。无需预装 Node、Python、uv、Git 或 Jev 技能；系统需具备 Windows 自带的 .NET Framework 4.8 和 Windows PowerShell 5.1。
+2. 选择专用安装目录和研究工作区，主持宿主默认“自动检测并接入已安装宿主”，保留自动合并MCP与两个技能选项，点击“开始安装”。已有可用Jev环境复用，新机从随包文件离线补齐。
 3. 缺少 Chrome 时可安装随包的 Google 官方原始安装包，已有浏览器直接复用。Chrome 遵循其原始条款；企业策略可能需要管理员协助。向导不会绕过策略。
-4. 完成后点击“使用指南”，在宿主的 MCP / 连接器界面导入生成的配置，并加载两个研究技能。支持的个人技能目录可由向导复制；WorkBuddy 需要选择实际目录或使用其技能导入界面。已有技能目录保留，更新使用宿主功能。
+4. 完成后点击“使用指南”，逐宿主查看MCP、技能、耗时和待处理状态。已自动接入的宿主无需复制配置，重新加载即可。QwenWork需一次界面MCP导入，DSH需按profile接入overlay；冲突、未知位置、定制技能保留原样并提示。详见 [自动接入与回滚](automatic-hosts.md)。
 5. 在 Chrome 打开 `chrome://inspect/#remote-debugging`，启用远程调试；点击向导“授权检查”，批准 Chrome 的 Allow。打开 Microsoft 365 Copilot，由你完成登录。
-6. 在已连接的宿主中调用 `discussion_doctor`，然后使用下方研究提示词。宿主客户端、账号、订阅和工具权限由宿主提供。
+6. 在已连接的宿主中调用 `discussion_doctor`，然后开始研究。宿主客户端、账号、订阅和工具权限由宿主提供；必要的宿主信任确认不会被静默接受。向导“撤销接入”按校验恢复本次改动，保留后续用户修改和研究工作区。
 
 完整 EXE 是离线安装包，包含 Node 24.22.0、uv 0.13.4、Python 3.12.15（独立可迁移发行版）、固定提交 Jev、15 个锁定 Windows 依赖和 Chrome 155.0.8059.85 官方安装包。包中不包含本机配置、密钥、浏览器资料、登录状态或历史研究。Python 虚拟环境会在目标电脑新建，使用随包 wheels 和哈希锁强制离线安装，不借用构建机缓存；不会自动转为联网下载。
 
@@ -17,7 +17,7 @@
 
 ```text
 CopilotDiscussion/
-├─ versions/0.8.0/
+├─ versions/0.9.0/
 │  ├─ CopilotDiscussion.exe          后续配置与授权检查界面
 │  ├─ product/                      完整插件、技能、文档、构建源码
 │  ├─ tools/{node,uv,python}/        独立运行时及原许可
@@ -28,9 +28,9 @@ CopilotDiscussion/
 └─ setup-state.json                  最近一次安装状态与阶段耗时
 ```
 
-用户配置仍在 `~/.copilot-discussion/`，研究保存在所选工作区 `output/research-runs/`。在另一电脑运行安装程序重新生成路径，不能直接复制旧 MCP 模板。单独的 `CopilotDiscussion-0.8.0-Plugin.zip` 用于支持本地插件/技能导入的宿主；它不包含大型运行时。完整 EXE、插件 ZIP、校验文件都在发布产物目录 `output/releases/v080/`。生成的开始菜单入口可重开向导和使用指南。
+用户配置仍在 `~/.copilot-discussion/`，研究保存在所选工作区 `output/research-runs/`。在另一电脑运行安装程序重新生成路径，不能直接复制旧 MCP 模板。单独的 `CopilotDiscussion-0.9.0-Plugin.zip` 用于支持本地插件/技能导入的宿主；它不包含大型运行时。完整 EXE、插件 ZIP、校验文件都在发布产物目录 `output/releases/v090/`。生成的开始菜单入口可重开向导和使用指南。宿主接入登记与备份仅保存在本机 `~/.copilot-discussion/host-integrations/`。
 
-当前交付为未签名测试包。普通环境可能显示未知发布者；启用 Smart App Control 或企业代码完整性策略的电脑可能直接阻止启动。本机最终包已经遇到 `VerifiedAndReputableDesktop` 策略拦截，不能保证换一台电脑即可运行。正式分发应使用受信任签名渠道对安装程序和管理器签名，并在目标策略下复验；不要求关闭安全策略或安装自签名根证书。签名构建步骤见下方构建说明及 [Microsoft 官方要求](https://learn.microsoft.com/en-us/windows/apps/develop/smart-app-control/code-signing-for-smart-app-control)。SHA256用于文件完整性，不能替代签名。Google 原始安装包签名保持不变。
+当前交付为未签名测试包。普通环境可能显示未知发布者；启用 Smart App Control 或企业代码完整性策略的电脑可能直接阻止启动。此前v0.8最终包已经遇到 `VerifiedAndReputableDesktop` 策略拦截；v0.9不改变信任状态，不能保证换一台电脑即可运行。正式分发应使用受信任签名渠道对安装程序和管理器签名，并在目标策略下复验；不要求关闭安全策略或安装自签名根证书。签名构建步骤见下方构建说明及 [Microsoft 官方要求](https://learn.microsoft.com/en-us/windows/apps/develop/smart-app-control/code-signing-for-smart-app-control)。SHA256用于文件完整性，不能替代签名。Google 原始安装包签名保持不变。
 
 软件离线安装不代表研究可离线进行：免费资料检索、宿主服务和 Copilot 网页仍需联网。其他宿主只核查官方接口，实际客户端是否支持界面导入以其当前版本为准。
 

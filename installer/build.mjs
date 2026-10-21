@@ -23,6 +23,11 @@ const payload = path.join(build, 'payload');
 await fs.mkdir(payload, { recursive: true }); await fs.mkdir(downloadDir, { recursive: true }); await fs.mkdir(release, { recursive: true });
 const lock = JSON.parse(await fs.readFile(path.join(installer, 'assets.lock.json'), 'utf8'));
 const hash = async file => { const digest = createHash('sha256'); for await (const chunk of createReadStream(file)) digest.update(chunk); return digest.digest('hex'); };
+const vendorRoot = path.join(project, 'plugins/copilot-discussion/skills/copilot-discussion/scripts/vendor');
+const vendorLock = JSON.parse(await fs.readFile(path.join(vendorRoot, 'lock.json'), 'utf8'));
+for (const item of vendorLock.files) {
+  if (!/^(jsonc-parser|smol-toml)\/[A-Za-z0-9_./-]+$/u.test(item.path) || item.path.split('/').includes('..') || await hash(path.join(vendorRoot, item.path)) !== item.sha256) throw new Error('Vendored parser checksum mismatch');
+}
 const log = message => console.log(new Date().toISOString() + ' ' + message);
 const run = async (command, argv) => { const result = await runProgram(command, argv, { timeoutMs: 900000, env: { ...process.env, PYTHONUTF8: '1', PYTHONDONTWRITEBYTECODE: '1', UV_NO_ENV_FILE: '1' } }); if (!result.ok) throw new Error(`Build step failed (${result.code}): ${path.basename(command)} ${argv[0]}`); return result.output; };
 const py = options.python || 'py';
@@ -88,7 +93,8 @@ const components = [
   { name: 'uv', version: LOCK.uv.version, url: LOCK.uv.x64.url, sha256: LOCK.uv.x64.sha256, license: 'uv-LICENSE-MIT' },
   { name: 'Python (Astral python-build-standalone)', ...lock.python, license: '../tools/python/LICENSE.txt' },
   { name: 'Jev Ultrafast', version: LOCK.jev.commit, url: LOCK.jev.url, sha256: LOCK.jev.sha256, license: '../jev/LICENSE' },
-  { name: 'Google Chrome (official unmodified installer)', ...lock.chrome, license: 'Chrome-terms.html' }
+  { name: 'Google Chrome (official unmodified installer)', ...lock.chrome, license: 'Chrome-terms.html' },
+  ...vendorLock.packages.map(item => ({ ...item, license: '../product/plugins/copilot-discussion/skills/copilot-discussion/scripts/vendor/' + item.name + '/' + (item.name === 'jsonc-parser' ? 'LICENSE.md' : 'LICENSE') }))
 ];
 await fs.writeFile(path.join(payload, 'notices/components.json'), JSON.stringify(components, null, 2) + '\n');
 await fs.writeFile(path.join(payload, 'notices/THIRD-PARTY.html'), `<!doctype html><meta charset="utf-8"><title>第三方组件</title><style>body{font:16px/1.8 sans-serif;max-width:900px;margin:40px auto}a{color:#1558b0}code{word-break:break-all}</style><h1>第三方组件及原始许可</h1><p>软件原包未经修改；遵循各自原许可。宿主客户端、账号与订阅由用户配置。本产品不附带密钥、登录状态、浏览器资料或研究记录。</p>${components.map(c => `<h2>${c.name} ${c.version}</h2><p><a href="${c.url}">原始来源</a> · <a href="${c.license}">许可 / 条款</a></p><code>SHA256 ${c.sha256}</code>`).join('')}<h2>Python 依赖</h2><p>15 个 Windows/Python 3.12 wheels 来自 PyPI，版本及允许哈希来自 Jev uv.lock。完整 wheel 和原许可位于 wheels 与 notices/wheels，安装后许可仍保存在 site-packages。</p>`);
@@ -96,7 +102,7 @@ const compiler = path.join(process.env.WINDIR || 'C:\\Windows', 'Microsoft.NET/F
 const generated = path.join(build, 'BuildInfo.cs');
 const compile = async (output, digest, withPayload) => {
   await fs.writeFile(generated, `internal static class BuildInfo { internal const string Version = "${version}"; internal const string PayloadSha256 = "${digest}"; }\n`);
-  await run(compiler, ['/nologo', '/target:winexe', '/platform:x64', '/optimize+', '/utf8output', '/codepage:65001', '/reference:System.Windows.Forms.dll', '/reference:System.Drawing.dll', '/reference:System.Web.Extensions.dll', '/reference:System.IO.Compression.dll', '/reference:System.IO.Compression.FileSystem.dll', '/win32manifest:' + path.join(installer, 'src/app.manifest'), '/out:' + output, ...(withPayload ? ['/resource:' + path.join(build, 'payload.zip') + ',payload.zip'] : []), path.join(installer, 'src/Setup.cs'), generated]);
+  await run(compiler, ['/nologo', '/target:winexe', '/platform:x64', '/optimize+', '/utf8output', '/codepage:65001', '/reference:System.Windows.Forms.dll', '/reference:System.Drawing.dll', '/reference:System.Web.Extensions.dll', '/reference:System.IO.Compression.dll', '/reference:System.IO.Compression.FileSystem.dll', '/win32manifest:' + path.join(installer, 'src/app.manifest'), '/resource:' + path.join(project, 'plugins/copilot-discussion/skills/copilot-discussion/scripts/host-catalog.json') + ',hosts.json', '/out:' + output, ...(withPayload ? ['/resource:' + path.join(build, 'payload.zip') + ',payload.zip'] : []), path.join(installer, 'src/Setup.cs'), generated]);
 };
 const sign = async file => {
   if (!options['sign-tool']) return;

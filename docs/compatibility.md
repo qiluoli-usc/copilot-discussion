@@ -2,6 +2,8 @@
 
 核查日期：2026-10-21。这里的“宿主”指主持研究的 Agent；被操作的对话页面始终是 Microsoft 365 Copilot。GitHub Copilot 与 Microsoft 365 Copilot 是两个角色。
 
+v0.9加入宿主检测、MCP增量合并、技能接入和回滚；逐宿主自动化范围见 [自动接入](automatic-hosts.md)。配置格式通过夹具验证不等于所有客户端实际加载通过。QwenWork与DSH仍有明确手动接入步骤。
+
 ## 接口选择
 
 公共执行核心是 Node 本地 stdio MCP，提供11个 `discussion_*` 工具；两个 Skill 提供选题、逐轮判断和交付流程。Native 仍由本机 Jev 驱动 Windows Chrome。各宿主读取同一配置和研究记录格式，不为每种宿主复制执行代码。

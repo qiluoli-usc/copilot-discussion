@@ -7,3 +7,6 @@
 *.cs text eol=crlf
 *.exe -text
 *.zip -text
+
+# Preserve pinned third-party distribution bytes.
+plugins/copilot-discussion/skills/copilot-discussion/scripts/vendor/** -text whitespace=cr-at-eol

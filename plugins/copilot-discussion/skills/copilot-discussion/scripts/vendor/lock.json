@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "packages": [
+    {
+      "name": "jsonc-parser",
+      "version": "3.3.1",
+      "license": "MIT",
+      "url": "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz",
+      "sha256": "4a0315b8671e7463bae7af7c142cdf19e9aa7ba39eb36dc2df383b8648e3cbc9"
+    },
+    {
+      "name": "smol-toml",
+      "version": "1.9.1",
+      "license": "BSD-3-Clause",
+      "url": "https://registry.npmjs.org/smol-toml/-/smol-toml-1.9.1.tgz",
+      "sha256": "4ac8392f1918c22a4366be19047cf53aa42646077d4c711b2ef73263beefb172"
+    }
+  ],
+  "files": [
+    {
+      "path": "jsonc-parser/lib/umd/impl/edit.js",
+      "sha256": "9ecd115039cf7a478f223e4a9649170c7f5e8fd8016df1b267723b57553f9483"
+    },
+    {
+      "path": "jsonc-parser/lib/umd/impl/format.js",
+      "sha256": "f9e468e436bf1014a4395b1ac70374edb918739ba90b19e6e6a22ca0214564a9"
+    },
+    {
+      "path": "jsonc-parser/lib/umd/impl/parser.js",
+      "sha256": "a35db1bfb9631dcba643fa42972e9ebe2a318b4de3cac239d29081577a43d688"
+    },
+    {
+      "path": "jsonc-parser/lib/umd/impl/scanner.js",
+      "sha256": "581d82c4f1aa84b0605369c01f414fb0164ee462e03daa298cb960076a2a9e82"
+    },
+    {
+      "path": "jsonc-parser/lib/umd/impl/string-intern.js",
+      "sha256": "e590d27909a7c132382fbf9b8c4668054ab425734c1e0789753063356826c30f"
+    },
+    {
+      "path": "jsonc-parser/lib/umd/main.d.ts",
+      "sha256": "f1d603af05e59e26aae3d9fa7bb0138e744bfbfc9f4793ddeaabe5c85da1d30f"
+    },
+    {
+      "path": "jsonc-parser/lib/umd/main.js",
+      "sha256": "6dc132e2e792a9616688ff93d10dd671c1fbcfa3301d76bff3e81193d049337d"
+    },
+    {
+      "path": "jsonc-parser/LICENSE.md",
+      "sha256": "c3a24c02d678e5f0711623dcf3ab3f243b273c2633f638a1fa8e35fb7c7f8e4d"
+    },
+    {
+      "path": "jsonc-parser/package.json",
+      "sha256": "a7a9192caaac00d9330592f4fd572908bee037518128a0fc3db96d2cd652e2b5"
+    },
+    {
+      "path": "smol-toml/dist/index.cjs",
+      "sha256": "f9029370259e9a43a2f3e64fa1d39e72f3598188380ace83a0abb8261fa33555"
+    },
+    {
+      "path": "smol-toml/LICENSE",
+      "sha256": "fa5659948374d4f555594f47f6da073b40dc503e921aeeece30df4362b3051a5"
+    },
+    {
+      "path": "smol-toml/package.json",
+      "sha256": "d7ad6488e35b31d46bac6412d2d35225db4d693f02a415d872714ceb7e3d7138"
+    }
+  ]
+}

@@ -6,7 +6,7 @@ import { ResearchService, SERVICE_INSTRUCTIONS } from './research-service.mjs';
 import { TOOLS, validateArguments } from './mcp-tools.mjs';
 
 export const PROTOCOLS = ['2025-06-18', '2025-03-26', '2024-11-05'];
-export const SERVER_VERSION = '0.7.0';
+export const SERVER_VERSION = '0.9.0';
 
 // A local-only, dependency-free MCP stdio transport. stdout is exclusively
 // JSON-RPC; the old research-server JSON-lines format is a separate endpoint.
