@@ -108,6 +108,8 @@ node "$DiscussionPlugin\skills\copilot-discussion\scripts\setup.mjs" `
 
 ## 3. 接入宿主
 
+**完整EXE用户先看 [七个宿主的逐步操作指南](host-setup.md)。** 每节都列出自动接入后如何重新加载、确认服务器/技能、调用doctor，以及需手动导入时应使用哪个本机模板。QwenWork、DSH及自定义profile的额外步骤单独说明。下面保留手动备用和高级插件路线；向导已自动接入成功时，无需重复注册。
+
 以下只选择正在使用的宿主。所有生成模板都使用 Node、服务器及配置的绝对路径；移动/更新插件位置后重新生成，避免模板仍指向旧目录。保留源目录，不把其他机器的模板原封不动复制过来。
 
 ### Codex
@@ -165,7 +167,7 @@ Skills 可放项目 `.github/skills`，或个人 `~/.copilot/skills`。安装两
 
 将 `--target all` 改为具体宿主，再加 `--install-skills`：codex、claude-code、dsh、qwenwork、github-copilot、vscode 都有已核实的个人技能目录。也可用 `--skills-dir <绝对目录>` 指定项目目录。workbuddy/generic/all 必须显式提供 skills-dir。
 
-安装器只复制到不存在的技能目录；已存在时停止并保留原内容。已通过原生插件加载时无需再复制一套技能，以免触发重复。Skill 复制与 MCP 注册是两步，脚本不会擅自修改宿主配置。
+本节的命令行 `setup.mjs --install-skills` 只复制到不存在的技能目录，已有目录会保留；它与图形安装器的所有权登记/增量合并流程不同。图形安装器的结果见 [自动接入与回滚](automatic-hosts.md)。已自动接入或通过原生插件加载时，无需再复制一套技能或重复注册。
 
 ## 4. 验证与开始讨论
 

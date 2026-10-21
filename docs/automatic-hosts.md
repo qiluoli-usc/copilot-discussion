@@ -1,5 +1,7 @@
 # 宿主自动接入（v0.9.0）
 
+逐宿主操作、检查命令与手动导入步骤见 [首次使用步骤](host-setup.md)，包括Codex、Claude Code、WorkBuddy、QwenWork、DSH、GitHub Copilot CLI和VS Code。
+
 完整Windows x64 Setup默认选择“自动检测并接入已安装宿主”。检测只查看已知用户配置目录与PATH启动入口，不扫描磁盘、会话或凭据。安装器准备运行环境后，用这台电脑的绝对路径合并MCP并安装两个完整技能目录。其他设置、账号与权限保留；没有预装Jev Native、Node、Python或Jev技能也可用完整EXE准备。
 
 ## 可自动写入的范围
