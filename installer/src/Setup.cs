@@ -121,7 +121,7 @@ internal static class Engine
     internal static void Verify(string root, Action<string> log)
     {
         var manifest = Program.Json.Deserialize<Dictionary<string, object>>(File.ReadAllText(Path.Combine(root, "bundle.json"), Program.Utf8));
-        if ((string)manifest["version"] != BuildInfo.Version || (string)manifest["arch"] != "x64") throw new InvalidDataException("产品版本或架构不匹配。");
+        if ((string)manifest["version"] != BuildInfo.Version || (string)manifest["arch"] != "x64" || !manifest.ContainsKey("buildRevision") || (string)manifest["buildRevision"] != BuildInfo.Revision) throw new InvalidDataException("产品版本、修订或架构不匹配。");
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (Dictionary<string, object> item in (System.Collections.IEnumerable)manifest["files"])
         {
@@ -136,7 +136,7 @@ internal static class Engine
     static string Prepare(string installRoot, Action<string> log)
     {
         var root = Path.GetFullPath(installRoot);
-        var versionRoot = Path.Combine(root, "versions", BuildInfo.Version);
+        var versionRoot = Path.Combine(root, "versions", BuildInfo.InstallationId);
         if (Directory.Exists(versionRoot)) { log("检测到本版本产品，验证后复用。"); Verify(versionRoot, log); return versionRoot; }
         if (!HasPayload)
         {
@@ -233,6 +233,7 @@ internal static class Engine
             result["installerStages"] = new { payloadPrepareMs = payloadElapsed, backendMs = (DateTime.UtcNow - backendStarted).TotalMilliseconds };
             var statePath = Path.Combine(root, "setup-state.json");
             result["productVersion"] = BuildInfo.Version;
+            result["productRevision"] = BuildInfo.Revision;
             // An idempotent reconfigure keeps the last reversible transaction.
             try
             {
@@ -271,10 +272,37 @@ internal static class Engine
     }
 }
 
+internal static class HostInstructions
+{
+    internal static readonly Dictionary<string, object> Data = Load();
+    static Dictionary<string, object> Load()
+    {
+        using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("host-guide.json"))
+        {
+            if (stream == null) throw new InvalidDataException("安装程序缺少内置宿主说明，请重新下载完整安装包。");
+            using (var reader = new StreamReader(stream, Program.Utf8))
+            {
+                var data = Program.Json.Deserialize<Dictionary<string, object>>(reader.ReadToEnd());
+                if (((object[])data["hosts"]).Length != 7) throw new InvalidDataException("安装程序内置宿主说明不完整。");
+                return data;
+            }
+        }
+    }
+    internal static IEnumerable<Dictionary<string, object>> Hosts { get { return ((object[])Data["hosts"]).Cast<Dictionary<string, object>>(); } }
+    internal static string TextFor(string id)
+    {
+        var item = Hosts.FirstOrDefault(h => (string)h["id"] == id);
+        var text = item == null ? (string)Data["overviewText"] : (string)item["text"];
+        return ("以下说明已内置安装程序，可在安装前离线查看。浏览器授权与账号登录由你完成。\n\n" + text + "\n\n" + (string)Data["commonText"]).Replace("\n", Environment.NewLine);
+    }
+}
+
 internal sealed class SetupForm : Form
 {
-    readonly TextBox root = new TextBox(), workspace = new TextBox(), detected = new TextBox(), log = new TextBox();
-    readonly ComboBox host = new ComboBox();
+    readonly TextBox root = new TextBox(), workspace = new TextBox(), detected = new TextBox(), log = new TextBox(), instructions = new TextBox();
+    readonly ComboBox host = new ComboBox(), instructionHost = new ComboBox();
+    readonly TabControl tabs = new TabControl();
+    readonly List<string> instructionIds = new List<string> { "auto" };
     readonly CheckBox chrome = new CheckBox(), skills = new CheckBox(), reuse = new CheckBox(), shortcuts = new CheckBox();
     readonly Button install = new Button(), guide = new Button(), copy = new Button(), check = new Button(), browse = new Button(), undo = new Button();
     readonly ProgressBar progress = new ProgressBar();
@@ -283,8 +311,8 @@ internal sealed class SetupForm : Form
     Dictionary<string, object> result; bool busy;
     internal SetupForm()
     {
-        Text = "Copilot 主题讨论 · 安装向导 " + BuildInfo.Version; Font = new Font("Microsoft YaHei UI", 10F);
-        AutoScaleMode = AutoScaleMode.Dpi; ClientSize = new Size(960, 760); MinimumSize = new Size(920, 720); StartPosition = FormStartPosition.CenterScreen;
+        Text = "Copilot 主题讨论 · 安装向导 " + BuildInfo.Version + " · " + BuildInfo.Revision; Font = new Font("Microsoft YaHei UI", 10F);
+        AutoScaleMode = AutoScaleMode.Dpi; ClientSize = new Size(1000, 820); MinimumSize = new Size(920, 720); StartPosition = FormStartPosition.CenterScreen;
         BackColor = Color.FromArgb(246, 248, 252);
         var layout = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(24), ColumnCount = 3, RowCount = 13 };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 116)); layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 84));
@@ -307,7 +335,23 @@ internal sealed class SetupForm : Form
         var chromeBox = new FlowLayoutPanel { Dock = DockStyle.Fill }; chromeBox.Controls.Add(chrome);
         var terms = new LinkLabel { Text = "Google Chrome 条款", AutoSize = true }; terms.LinkClicked += delegate { Open("https://www.google.com/chrome/terms/"); }; chromeBox.Controls.Add(terms); Span(layout, chromeBox, 8);
         progress.Dock = DockStyle.Fill; Span(layout, progress, 9);
-        log.Multiline = true; log.ReadOnly = true; log.ScrollBars = ScrollBars.Vertical; log.Dock = DockStyle.Fill; log.BackColor = Color.White; Span(layout, log, 10);
+        tabs.Dock = DockStyle.Fill;
+        TabPage instructionPage = new TabPage("宿主安装说明（安装前即可查看）"), logPage = new TabPage("安装日志");
+        tabs.TabPages.Add(instructionPage); tabs.TabPages.Add(logPage); Span(layout, tabs, 10);
+        var instructionLayout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 2, Padding = new Padding(8) };
+        instructionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90)); instructionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        instructionLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 38)); instructionLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        instructionPage.Controls.Add(instructionLayout);
+        instructionLayout.Controls.Add(new Label { Text = "查看步骤", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft }, 0, 0);
+        instructionHost.DropDownStyle = ComboBoxStyle.DropDownList; instructionHost.Dock = DockStyle.Fill; instructionHost.Items.Add("自动检测 / 通用 MCP：安装总览");
+        foreach (var item in HostInstructions.Hosts) { instructionIds.Add((string)item["id"]); instructionHost.Items.Add((string)item["label"]); }
+        instructionLayout.Controls.Add(instructionHost, 1, 0);
+        instructions.Multiline = true; instructions.ReadOnly = true; instructions.ScrollBars = ScrollBars.Vertical; instructions.Dock = DockStyle.Fill; instructions.BackColor = Color.White;
+        instructionLayout.Controls.Add(instructions, 0, 1); instructionLayout.SetColumnSpan(instructions, 2);
+        instructionHost.SelectedIndexChanged += delegate { if (instructionHost.SelectedIndex >= 0) { instructions.Text = HostInstructions.TextFor(instructionIds[instructionHost.SelectedIndex]); instructions.SelectionStart = 0; instructions.ScrollToCaret(); } };
+        instructionHost.SelectedIndex = 0;
+        new ToolTip().SetToolTip(instructionHost, "只切换说明，不会更改上方的安装宿主或现有设置。");
+        log.Multiline = true; log.ReadOnly = true; log.ScrollBars = ScrollBars.Vertical; log.Dock = DockStyle.Fill; log.BackColor = Color.White; logPage.Controls.Add(log);
         Span(layout, new Label { Text = "浏览器授权和登录由你完成。部分宿主仍需信任确认或一次导入，结果见使用指南。", Dock = DockStyle.Fill, ForeColor = Color.FromArgb(72, 90, 112) }, 11);
         var buttons = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft };
         install.Text = Engine.HasPayload ? "开始安装" : "保存配置"; guide.Text = "使用指南"; copy.Text = "复制 MCP"; check.Text = "授权检查"; browse.Text = "打开目录"; undo.Text = "撤销接入";
@@ -320,7 +364,7 @@ internal sealed class SetupForm : Form
         browse.Click += delegate { Open((string)result["outputDir"]); };
         check.Click += async delegate { await Check(); };
         undo.Click += async delegate { await Undo(); };
-        host.SelectedIndexChanged += delegate { SkillsState(); };
+        host.SelectedIndexChanged += delegate { SkillsState(); var index = instructionIds.IndexOf(hosts[host.SelectedIndex]); instructionHost.SelectedIndex = index < 0 ? 0 : index; tabs.SelectedIndex = 0; };
         SkillsState();
         try
         {
@@ -358,6 +402,7 @@ internal sealed class SetupForm : Form
         {
             if (!Path.IsPathRooted(root.Text) || !Path.IsPathRooted(workspace.Text)) throw new InvalidOperationException("请选择完整的安装目录和研究工作区路径。");
             var request = new Dictionary<string, object> { { "installRoot", root.Text }, { "workspace", workspace.Text }, { "config", config }, { "host", hosts[host.SelectedIndex] }, { "installChrome", chrome.Checked }, { "autoConnectHosts", skills.Checked }, { "reuseEnvironment", reuse.Checked }, { "shortcuts", shortcuts.Checked } };
+            tabs.SelectedIndex = 1;
             Busy(true); result = await Task.Run(() => Engine.Install(request, Append));
             guide.Enabled = copy.Enabled = browse.Enabled = true;
             Append("本次完整安装耗时 " + (Convert.ToDouble(result["installerElapsedMs"]) / 1000).ToString("F3") + " 秒。");
@@ -403,10 +448,22 @@ internal sealed class SetupForm : Form
     static void Open(string target) { try { Process.Start(new ProcessStartInfo(target) { UseShellExecute = true }); } catch (Exception e) { MessageBox.Show(e.Message); } }
     internal object SelfTest()
     {
-        if (install.Text.Length == 0 || host.Items.Count != 9 || host.SelectedIndex != 0 || !skills.Checked || ClientSize.Width < 800 || log.Height < 80 || install.Width < 60) throw new InvalidOperationException("安装界面自检失败。");
+        if (install.Text.Length == 0 || host.Items.Count != 9 || host.SelectedIndex != 0 || !skills.Checked || ClientSize.Width < 800 || install.Width < 60 || instructionHost.Items.Count != 8 || instructions.Text.Length < 200) throw new InvalidOperationException("安装界面自检失败。");
+        var checkedGuides = new List<string>();
+        for (int i = 2; i < hosts.Length; i++)
+        {
+            host.SelectedIndex = i;
+            if (instructionIds[instructionHost.SelectedIndex] != hosts[i] || instructions.Text != HostInstructions.TextFor(hosts[i]) || tabs.SelectedIndex != 0) throw new InvalidOperationException("宿主选择与说明不一致：" + hosts[i]);
+            checkedGuides.Add(hosts[i]);
+        }
+        host.SelectedIndex = 1;
+        if (instructionHost.SelectedIndex != 0 || skills.Checked) throw new InvalidOperationException("通用宿主说明自检失败。");
+        instructionHost.SelectedIndex = 1;
+        if (host.SelectedIndex != 1) throw new InvalidOperationException("查看说明不应更改安装宿主。");
+        host.SelectedIndex = 0;
         bool traversal = false; try { Engine.Child(Path.GetTempPath(), "../escape"); } catch (InvalidDataException) { traversal = true; }
         if (!traversal || Engine.Quote("a b\\") != "\"a b\\\\\"") throw new InvalidOperationException("路径或参数保护自检失败。");
-        return new { passed = true, version = BuildInfo.Version, hasEmbeddedPayload = Engine.HasPayload, hostCount = host.Items.Count, clientWidth = ClientSize.Width, clientHeight = ClientSize.Height, controls = Flatten(this).Select(c => new { type = c.GetType().Name, text = c is TextBox ? "" : c.Text, width = c.Width, height = c.Height }).ToArray() };
+        return new { passed = true, version = BuildInfo.Version, revision = BuildInfo.Revision, checkedGuides = checkedGuides, hasEmbeddedPayload = Engine.HasPayload, hostCount = host.Items.Count, clientWidth = ClientSize.Width, clientHeight = ClientSize.Height, controls = Flatten(this).Select(c => new { type = c.GetType().Name, text = c is TextBox ? "" : c.Text, width = c.Width, height = c.Height }).ToArray() };
     }
     static IEnumerable<Control> Flatten(Control c) { foreach (Control child in c.Controls) { yield return child; foreach (var nested in Flatten(child)) yield return nested; } }
 }

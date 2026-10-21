@@ -5,9 +5,9 @@
 ## 图形安装（无需命令行）
 
 1. 把 `CopilotDiscussion-0.9.0-Setup-win-x64.exe` 复制到目标 Windows 10 / 11 x64 电脑，双击运行。无需预装 Node、Python、uv、Git 或 Jev 技能；系统需具备 Windows 自带的 .NET Framework 4.8 和 Windows PowerShell 5.1。
-2. 选择专用安装目录和研究工作区，主持宿主默认“自动检测并接入已安装宿主”，保留自动合并MCP与两个技能选项，点击“开始安装”。已有可用Jev环境复用，新机从随包文件离线补齐。
+2. 选择专用安装目录和研究工作区，主持宿主默认“自动检测并接入已安装宿主”。选中具体宿主时，下方“宿主安装说明”立即显示对应步骤；也可用“查看步骤”单独浏览七个宿主，不改变安装目标。说明内置EXE，可在安装前离线阅读。保留自动合并MCP与两个技能选项，点击“开始安装”。已有可用Jev环境复用，新机从随包文件离线补齐。
 3. 缺少 Chrome 时可安装随包的 Google 官方原始安装包，已有浏览器直接复用。Chrome 遵循其原始条款；企业策略可能需要管理员协助。向导不会绕过策略。
-4. 完成后点击“使用指南”，逐宿主查看MCP、技能、耗时和待处理状态。已自动接入的宿主无需复制配置，重新加载即可。QwenWork需一次界面MCP导入，DSH需按profile接入overlay；冲突、未知位置、定制技能保留原样并提示。详见 [自动接入与回滚](automatic-hosts.md)。
+4. 完成后点击“使用指南”，逐宿主查看MCP、技能、耗时和待处理状态。指南默认显示本次宿主的详细步骤，内置下拉框也可切换其他宿主。已自动接入的宿主无需复制配置，重新加载即可。QwenWork需一次界面MCP导入，DSH需按profile接入overlay；冲突、未知位置、定制技能保留原样并提示。详见 [逐宿主步骤](host-setup.md) 与 [自动接入与回滚](automatic-hosts.md)。
 5. 在 Chrome 打开 `chrome://inspect/#remote-debugging`，启用远程调试；点击向导“授权检查”，批准 Chrome 的 Allow。打开 Microsoft 365 Copilot，由你完成登录。
 6. 在已连接的宿主中调用 `discussion_doctor`，然后开始研究。宿主客户端、账号、订阅和工具权限由宿主提供；必要的宿主信任确认不会被静默接受。向导“撤销接入”按校验恢复本次改动，保留后续用户修改和研究工作区。
 
@@ -17,7 +17,7 @@
 
 ```text
 CopilotDiscussion/
-├─ versions/0.9.0/
+├─ versions/0.9.0-host-guide.1/
 │  ├─ CopilotDiscussion.exe          后续配置与授权检查界面
 │  ├─ product/                      完整插件、技能、文档、构建源码
 │  ├─ tools/{node,uv,python}/        独立运行时及原许可
@@ -28,7 +28,7 @@ CopilotDiscussion/
 └─ setup-state.json                  最近一次安装状态与阶段耗时
 ```
 
-用户配置仍在 `~/.copilot-discussion/`，研究保存在所选工作区 `output/research-runs/`。在另一电脑运行安装程序重新生成路径，不能直接复制旧 MCP 模板。单独的 `CopilotDiscussion-0.9.0-Plugin.zip` 用于支持本地插件/技能导入的宿主；它不包含大型运行时。完整 EXE、插件 ZIP、校验文件都在发布产物目录 `output/releases/v090/`。生成的开始菜单入口可重开向导和使用指南。宿主接入登记与备份仅保存在本机 `~/.copilot-discussion/host-integrations/`。
+用户配置仍在 `~/.copilot-discussion/`，研究保存在所选工作区 `output/research-runs/`。在另一电脑运行安装程序重新生成路径，不能直接复制旧 MCP 模板。单独的 `CopilotDiscussion-0.9.0-Plugin.zip` 用于支持本地插件/技能导入的宿主；它不包含大型运行时。宿主说明修订包位于 `output/releases/v090-host-guide/`，GitHub标记为 `v0.9.0-preview.2`；原预览包仍保留在 `v0.9.0-preview`。修订包使用独立产品目录，已有运行环境可复用，避免继续读取旧版说明。生成的开始菜单入口可重开向导和使用指南。宿主接入登记与备份仅保存在本机 `~/.copilot-discussion/host-integrations/`。
 
 当前交付为未签名测试包。普通环境可能显示未知发布者；启用 Smart App Control 或企业代码完整性策略的电脑可能直接阻止启动。此前v0.8最终包已经遇到 `VerifiedAndReputableDesktop` 策略拦截；v0.9不改变信任状态，不能保证换一台电脑即可运行。正式分发应使用受信任签名渠道对安装程序和管理器签名，并在目标策略下复验；不要求关闭安全策略或安装自签名根证书。签名构建步骤见下方构建说明及 [Microsoft 官方要求](https://learn.microsoft.com/en-us/windows/apps/develop/smart-app-control/code-signing-for-smart-app-control)。SHA256用于文件完整性，不能替代签名。Google 原始安装包签名保持不变。
 

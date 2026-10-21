@@ -2,14 +2,14 @@
 
 适用于已用完整 `CopilotDiscussion-0.9.0-Setup-win-x64.exe` 安装的 Windows 10/11 x64 用户。没有预装 Jev Native、Jev技能、Node 或 Python 也可由完整 EXE 准备。安装包不包含 Agent 客户端、账号或订阅。默认无需 Jev API Key。
 
-公开测试下载：[v0.9.0-preview](https://github.com/qiluoli-usc/copilot-discussion/releases/tag/v0.9.0-preview)。本说明更新于2026-10-21；当前发布的EXE与插件ZIP保持原校验值，较旧的内置说明可配合本页或附件 `HOST-SETUP.html` 使用。
+公开测试下载：[v0.9.0-preview.2 宿主说明修订包](https://github.com/qiluoli-usc/copilot-discussion/releases/tag/v0.9.0-preview.2)。本说明更新于2026-10-21。修订包的完整EXE和后续配置向导均内置七宿主步骤；只下载EXE即可离线阅读，无需另外下载HTML。原版 `v0.9.0-preview` 保留原校验值。
 
 ## 先找到本机配置与状态
 
-1. 安装向导保持“自动检测并接入已安装宿主”和自动合并MCP/安装技能选项，点击“开始安装”。如果宿主首次安装后还没启动过，先正常打开并完成宿主自己的登录，再重新运行配置向导。
+1. 安装前先选择“主持宿主”，下方“宿主安装说明”会立即显示对应步骤。自动检测或通用模式先显示安装总览，也可在“查看步骤”里分别查看七宿主说明；查看说明不会更改安装目标。准备好后保留自动合并MCP/安装技能选项，点击“开始安装”。如果宿主首次安装后还没启动过，先正常打开并完成宿主自己的登录，再重新运行配置向导。
 2. 完成后点“使用指南”，看对应宿主那一行的 MCP、两个技能及下一步。显示“已写入/已复用/已准备”的项目无需重复导入；显示需导入、保留或冲突的项目按下文处理。
 3. 点向导“打开目录”，会打开本次生成的配置目录，里面有 `mcp.json`、`codex.toml`、`github-copilot.json`、`vscode-mcp.json`、`dsh.yaml`、`host-integration.json` 和 `开始使用.html`。这些模板包含本机绝对路径，不能直接复制另一台电脑的模板。
-4. 两个技能位于安装目录的 `versions/0.9.0/product/plugins/copilot-discussion/skills/` 下，目录名分别是 `copilot-discussion`、`research-topics`。手动导入时保留完整目录及辅助文件；若宿主只接受ZIP，分别将各技能目录的内容打包，使ZIP根级有 `SKILL.md`。
+4. 本修订包安装在 `versions/0.9.0-host-guide.1/`，两个技能位于其 `product/plugins/copilot-discussion/skills/` 下，目录名分别是 `copilot-discussion`、`research-topics`。手动导入时保留完整目录及辅助文件；若宿主只接受ZIP，分别将各技能目录的内容打包，使ZIP根级有 `SKILL.md`。安装后的“使用指南”也内置全部步骤，并默认选中本次宿主。
 
 服务器通常名为 `copilot-discussion`。遇到已有同名项时，向导会保留原项并使用独立名称，后续查找请以 `host-integration.json` 的 `serverName` 为准。不要删除其他服务器、覆盖整份用户设置，或同时启用两份指向同一研究的连接。
 

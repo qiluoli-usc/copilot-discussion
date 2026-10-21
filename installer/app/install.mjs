@@ -40,7 +40,10 @@ export async function install(request) {
   result.profileText = await fs.readFile(path.join(result.outputDir, result.profileFile), 'utf8');
   result.serverObjectText = JSON.stringify(generic.mcpServers['copilot-discussion'], null, 2);
   const guideFile = path.join(result.outputDir, '开始使用.html');
-  await fs.writeFile(guideFile, guide(result, request.host));
+  const hostGuide = JSON.parse(await fs.readFile(path.join(packageRoot, 'installer/app/host-guide.json'), 'utf8'));
+  result.selectedHost = request.host || 'auto';
+  result.buildRevision = manifest.buildRevision;
+  await fs.writeFile(guideFile, guide(result, result.selectedHost, hostGuide));
   await fs.writeFile(path.join(request.output, 'installer-result.json'), JSON.stringify({ ...result, guideFile, productRoot: path.join(packageRoot, 'product'), offline: true }, null, 2) + '\n');
   return { ...result, guideFile, productRoot: path.join(packageRoot, 'product'), offline: true };
 }

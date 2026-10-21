@@ -2,10 +2,15 @@ import { promises as fs, createReadStream } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import { parseHostGuide, standaloneGuide } from './app/host-guide.mjs';
 import { LOCK, runProgram, downloadVerified } from '../plugins/copilot-discussion/skills/copilot-discussion/scripts/bootstrap.mjs';
 
 const installer = path.dirname(fileURLToPath(import.meta.url)), project = path.dirname(installer);
 const version = JSON.parse(await fs.readFile(path.join(project, 'plugins/copilot-discussion/package.json'), 'utf8')).version;
+const { buildRevision } = JSON.parse(await fs.readFile(path.join(installer, 'release.json'), 'utf8'));
+if (!/^[a-z0-9][a-z0-9.-]{0,48}$/u.test(buildRevision)) throw new Error('Invalid installer build revision');
+const installationId = version + '-' + buildRevision;
+const hostGuide = parseHostGuide(await fs.readFile(path.join(project, 'docs/host-setup.md'), 'utf8'), JSON.parse(await fs.readFile(path.join(project, 'plugins/copilot-discussion/skills/copilot-discussion/scripts/host-catalog.json'), 'utf8')));
 for (const relative of ['plugin.json', '.codex-plugin/plugin.json', '.claude-plugin/plugin.json']) {
   const manifest = JSON.parse(await fs.readFile(path.join(project, 'plugins/copilot-discussion', relative), 'utf8'));
   if (manifest.version !== version) throw new Error('Plugin versions must agree before packaging: ' + relative);
@@ -16,7 +21,7 @@ for (let i = 0; i < args.length; i += 2) { if (![...pathOptions, '--certificate-
 if (Boolean(options['sign-tool']) !== Boolean(options['certificate-thumbprint']) || (options['certificate-thumbprint'] && !/^[a-f0-9]{40}$/iu.test(options['certificate-thumbprint']))) throw new Error('Signing requires an explicit SignTool path and certificate thumbprint; no PFX/password is accepted.');
 if (options['timestamp-url'] && (!options['sign-tool'] || !/^https:\/\//u.test(options['timestamp-url']))) throw new Error('Timestamp URL must be HTTPS and requires explicit signing configuration.');
 if (process.platform !== 'win32' || process.arch !== 'x64') throw new Error('Build the Windows x64 installer on Windows x64.');
-const release = options.output || path.join(project, 'output/releases', 'v' + version.replaceAll('.', ''));
+const release = options.output || path.join(project, 'output/releases', 'v' + version.replaceAll('.', '') + '-' + buildRevision);
 const downloadDir = path.join(project, 'output/builds/installer', 'assets-v' + version.replaceAll('.', ''), 'downloads');
 const build = path.join(project, 'output/builds/installer', version + '-' + new Date().toISOString().replace(/[:.]/gu, '-'));
 const payload = path.join(build, 'payload');
@@ -77,6 +82,10 @@ const compatibilityFile = path.join(payload, 'product/docs/compatibility.md');
 const compatibilityText = await fs.readFile(compatibilityFile, 'utf8');
 await fs.writeFile(compatibilityFile, compatibilityText.replace(/\[([^\]]+)\]\(\.\.\/output\/[^)]+\)/gu, '$1（见开发工作区对应记录，离线分发包不携带历史记录）'));
 await fs.cp(path.join(installer, 'app'), path.join(payload, 'installer/app'), { recursive: true });
+const hostGuideFile = path.join(build, 'host-guide.json');
+await fs.writeFile(hostGuideFile, JSON.stringify(hostGuide, null, 2) + '\n');
+await fs.copyFile(hostGuideFile, path.join(payload, 'installer/app/host-guide.json'));
+await fs.writeFile(path.join(payload, 'product/docs/HOST-SETUP.html'), standaloneGuide(hostGuide));
 await python([path.join(installer, 'pack.py'), 'licenses', wheels, path.join(payload, 'notices/wheels')]);
 await fs.mkdir(path.join(payload, 'notices'), { recursive: true });
 for (const entry of [
@@ -101,8 +110,8 @@ await fs.writeFile(path.join(payload, 'notices/THIRD-PARTY.html'), `<!doctype ht
 const compiler = path.join(process.env.WINDIR || 'C:\\Windows', 'Microsoft.NET/Framework64/v4.0.30319/csc.exe');
 const generated = path.join(build, 'BuildInfo.cs');
 const compile = async (output, digest, withPayload) => {
-  await fs.writeFile(generated, `internal static class BuildInfo { internal const string Version = "${version}"; internal const string PayloadSha256 = "${digest}"; }\n`);
-  await run(compiler, ['/nologo', '/target:winexe', '/platform:x64', '/optimize+', '/utf8output', '/codepage:65001', '/reference:System.Windows.Forms.dll', '/reference:System.Drawing.dll', '/reference:System.Web.Extensions.dll', '/reference:System.IO.Compression.dll', '/reference:System.IO.Compression.FileSystem.dll', '/win32manifest:' + path.join(installer, 'src/app.manifest'), '/resource:' + path.join(project, 'plugins/copilot-discussion/skills/copilot-discussion/scripts/host-catalog.json') + ',hosts.json', '/out:' + output, ...(withPayload ? ['/resource:' + path.join(build, 'payload.zip') + ',payload.zip'] : []), path.join(installer, 'src/Setup.cs'), generated]);
+  await fs.writeFile(generated, `internal static class BuildInfo { internal const string Version = "${version}"; internal const string Revision = "${buildRevision}"; internal const string InstallationId = "${installationId}"; internal const string PayloadSha256 = "${digest}"; }\n`);
+  await run(compiler, ['/nologo', '/target:winexe', '/platform:x64', '/optimize+', '/utf8output', '/codepage:65001', '/reference:System.Windows.Forms.dll', '/reference:System.Drawing.dll', '/reference:System.Web.Extensions.dll', '/reference:System.IO.Compression.dll', '/reference:System.IO.Compression.FileSystem.dll', '/win32manifest:' + path.join(installer, 'src/app.manifest'), '/resource:' + path.join(project, 'plugins/copilot-discussion/skills/copilot-discussion/scripts/host-catalog.json') + ',hosts.json', '/resource:' + hostGuideFile + ',host-guide.json', '/out:' + output, ...(withPayload ? ['/resource:' + path.join(build, 'payload.zip') + ',payload.zip'] : []), path.join(installer, 'src/Setup.cs'), generated]);
 };
 const sign = async file => {
   if (!options['sign-tool']) return;
@@ -121,7 +130,7 @@ async function entries(root, relative = '') {
   }
   return files;
 }
-const manifest = { schemaVersion: 1, version, platform: 'win32', arch: 'x64', jevCommit: LOCK.jev.commit,
+const manifest = { schemaVersion: 1, version, buildRevision, installationId, platform: 'win32', arch: 'x64', jevCommit: LOCK.jev.commit,
   paths: { node: 'tools/node/node.exe', uv: 'tools/uv/uv.exe', python: 'tools/python/python.exe', browserSource: 'jev/jev_ultrafast/browser.py', requirements: 'requirements-win-x64.txt', chrome: 'packages/GoogleChrome-x64.exe' },
   components, files: await entries(payload) };
 await fs.writeFile(path.join(payload, 'bundle.json'), JSON.stringify(manifest, null, 2) + '\n');
@@ -136,6 +145,7 @@ await python([path.join(installer, 'pack.py'), 'zip', path.join(payload, 'produc
 const artifacts = [exe, sourceZip];
 const sums = await Promise.all(artifacts.map(async file => `${await hash(file)}  ${path.basename(file)}`));
 await fs.writeFile(path.join(release, 'SHA256SUMS.txt'), sums.join('\n') + '\n');
-await fs.writeFile(path.join(release, 'build.json'), JSON.stringify({ version, builtAt: new Date().toISOString(), buildDirectory: build, platform: 'win32-x64', signing: options['sign-tool'] ? 'verified-authenticode' : 'unsigned', payload: packed, componentFiles: manifest.files.length,
+await fs.copyFile(path.join(payload, 'product/docs/HOST-SETUP.html'), path.join(release, 'HOST-SETUP.html'));
+await fs.writeFile(path.join(release, 'build.json'), JSON.stringify({ version, buildRevision, installationId, builtAt: new Date().toISOString(), buildDirectory: build, platform: 'win32-x64', signing: options['sign-tool'] ? 'verified-authenticode' : 'unsigned', payload: packed, componentFiles: manifest.files.length,
   artifacts: await Promise.all(artifacts.map(async file => ({ file, bytes: (await fs.stat(file)).size, sha256: await hash(file) }))) }, null, 2) + '\n');
 log('Release ready: ' + exe);

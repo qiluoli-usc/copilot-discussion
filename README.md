@@ -4,7 +4,9 @@ Jev Native 操作 Microsoft 365 Copilot 网页，当前 Agent 从免费公开资
 
 ## 首次安装
 
-在 Windows 10 / 11 x64 使用 `CopilotDiscussion-0.9.0-Setup-win-x64.exe`，选择研究工作区，默认自动检测宿主并合并MCP、安装两个研究技能；完成后查看“使用指南”。[GitHub公开预览下载](https://github.com/qiluoli-usc/copilot-discussion/releases/tag/v0.9.0-preview)。完整EXE含Node、uv、Python、Jev、锁定依赖与官方Chrome，新机无需预装Jev Native。
+在 Windows 10 / 11 x64 使用 `CopilotDiscussion-0.9.0-Setup-win-x64.exe`，选择研究工作区。安装前选择“主持宿主”，下方立即显示该宿主的逐步操作说明；自动检测模式也可分别查看七宿主步骤。说明直接内置EXE，无需单独下载HTML。默认自动检测宿主并合并MCP、安装两个研究技能；完成后查看“使用指南”。[GitHub公开预览修订包](https://github.com/qiluoli-usc/copilot-discussion/releases/tag/v0.9.0-preview.2)。完整EXE含Node、uv、Python、Jev、锁定依赖与官方Chrome，新机无需预装Jev Native。
+
+修订标识为 `host-guide.1`，产品安装在 `versions/0.9.0-host-guide.1/`，保留旧版目录并复用已有运行环境。原始 `v0.9.0-preview` 发布保持原校验值。
 
 当前仍为未签名预览包；此前v0.8最终包被本机Windows Smart App Control拦截，v0.9不改变Windows信任状态。受控电脑需要受信任签名及目标机复验；保留安全策略，不能保证直接启动。
 
@@ -13,7 +15,7 @@ Jev Native 操作 Microsoft 365 Copilot 网页，当前 Agent 从免费公开资
 ## 文件入口
 
 - [安装使用](docs/installation.md)：图形安装、授权、恢复与研究提示词。
-- [逐宿主操作指南](docs/host-setup.md)：七个宿主的重新加载、MCP/技能检查和手动接入步骤。
+- [逐宿主操作指南](docs/host-setup.md)：七个宿主的重新加载、MCP/技能检查和必要的手动接入步骤。
 - [自动接入与回滚](docs/automatic-hosts.md)：增量合并、备份、已支持宿主与需手动导入的例外。
 - [宿主兼容性](docs/compatibility.md)：Codex、Claude Code、WorkBuddy、DSH、QwenWork、GitHub Copilot / VS Code 的接口及实测范围。
 - [主技能](plugins/copilot-discussion/skills/copilot-discussion/SKILL.md) 与 [自动选题技能](plugins/copilot-discussion/skills/research-topics/SKILL.md)。导入时保留完整技能目录。
@@ -29,4 +31,4 @@ Jev Native 操作 Microsoft 365 Copilot 网页，当前 Agent 从免费公开资
 
 资料检索和 Copilot 讨论需要联网；关闭主持任务后不会继续生成新问题。完整安装包不携带构建机的密钥、登录资料、配置或历史研究。
 
-源码尚未指定开源许可证；第三方组件保留各自原始许可证。
+项目源码尚未指定开源许可证；第三方组件保留各自原始许可证。
