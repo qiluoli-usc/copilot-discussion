@@ -51,9 +51,9 @@ await run('py',['-3.12',path.join(root,'scripts/source-archive.py'),root,path.jo
 await fs.copyFile(path.join(build,zipName),path.join(output,zipName));
 const command=`npx.cmd --yes "https://github.com/qiluoli-usc/copilot-discussion/releases/download/v${version}/${packed.filename}" setup`;
 await fs.writeFile(path.join(output,'INSTALL-FIRST.txt'),`Copilot主题讨论 ${version}\r\n\r\n1. 使用Windows 10/11 x64，先从 https://nodejs.org/ 安装Node.js LTS，重开终端。\r\n2. 在终端粘贴下面整行，按回车，不需要先下载本页任何文件：\r\n\r\n${command}\r\n\r\n3. 等待完成，用Chrome打开终端给出的“开始使用.html”，选择你的AI软件照做。\r\n4. 开启Chrome远程调试，手动Allow并登录Microsoft 365 Copilot；按说明发检查提示词，再开始研究。\r\n\r\n详细步骤：https://github.com/qiluoli-usc/copilot-discussion/blob/main/docs/installation.md\r\n七个软件：https://github.com/qiluoli-usc/copilot-discussion/blob/main/docs/host-setup.md\r\n\r\n没有Jev Native或Python也能按需准备。默认无需Jev API Key。QwenWork需一次界面导入，DSH需加载启动配置。\r\n检查、修复、更新、卸载：将命令最后的setup换成doctor、repair、update、uninstall。维护前暂停研究。\r\n此包通过GitHub分发，尚未发布到npm公共仓库，请保留完整网址。\r\n`,'utf8');
-await fs.copyFile(path.join(root,'docs/installation.md'),path.join(output,'安装使用说明.md'));
-await fs.copyFile(path.join(root,'docs/host-setup.md'),path.join(output,'七个宿主操作步骤.md'));
-const names=[packed.filename,zipName,'INSTALL-FIRST.txt','安装使用说明.md','七个宿主操作步骤.md'];
+await fs.copyFile(path.join(root,'docs/installation.md'),path.join(output,'INSTALLATION.zh-CN.md'));
+await fs.copyFile(path.join(root,'docs/host-setup.md'),path.join(output,'HOST-SETUP.zh-CN.md'));
+const names=[packed.filename,zipName,'INSTALL-FIRST.txt','INSTALLATION.zh-CN.md','HOST-SETUP.zh-CN.md'];
 await fs.writeFile(path.join(output,'SHA256SUMS.txt'),(await Promise.all(names.map(async name=>hash(await fs.readFile(path.join(output,name)))+'  '+name))).join('\n')+'\n');
 await fs.writeFile(path.join(build,'build.json'),JSON.stringify({version,packed:{name:packed.filename,bytes:archive.length,sha256:hash(archive),files:packed.files.length,integrity:packed.integrity},vendorFilesVerified:lock.files.length,assets:names},null,2)+'\n');
 process.stdout.write(JSON.stringify({version,output,build,packageFile:packed.filename,bytes:archive.length,files:packed.files.length,vendorFilesVerified:lock.files.length},null,2)+'\n');
