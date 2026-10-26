@@ -1,34 +1,52 @@
-# Copilot 主题讨论 v0.9.0
+# Copilot主题讨论
 
-Jev Native 操作 Microsoft 365 Copilot 网页，当前 Agent 从免费公开资料选题、逐轮追问并交付完整记录和实际耗时。保留未发送草稿恢复、后台持续采集和仅推进新增争点。
+让你正在使用的AI助手，与Microsoft 365 Copilot网页持续讨论一个主题，并交付结论、分歧、完整问答和实际耗时。支持从免费公开资料自动选题，也可使用你给定的主题。
 
-## 首次安装
+当前推荐 **0.10.0-preview.1 npm/npx预览版**。不必先下载EXE；已有Jev环境直接复用，缺少的Python、uv和Jev依赖会自动准备。默认无需Jev API Key。
 
-在 Windows 10 / 11 x64 使用 `CopilotDiscussion-0.9.0-Setup-win-x64.exe`，选择研究工作区。安装前选择“主持宿主”，下方立即显示该宿主的逐步操作说明；自动检测模式也可分别查看七宿主步骤。说明直接内置EXE，无需单独下载HTML。默认自动检测宿主并合并MCP、安装两个研究技能；完成后查看“使用指南”。[GitHub公开预览修订包](https://github.com/qiluoli-usc/copilot-discussion/releases/tag/v0.9.0-preview.3)。完整EXE含Node、uv、Python、Jev、锁定依赖与官方Chrome，新机无需预装Jev Native。
+## 第一次安装
 
-修订标识为 `host-guide.2`，产品安装在 `versions/0.9.0-host-guide.2/`，保留旧版目录并复用已有运行环境。原始 `v0.9.0-preview` 发布保持原校验值。
+需要Windows 10/11 x64、Google Chrome、可用的Microsoft 365 Copilot账号、一个已安装的AI助手，以及Node.js 20或更高版本。没有Node.js时，从[官网](https://nodejs.org/en/download)安装LTS版，再重新打开终端。
 
-当前仍为未签名预览包；此前v0.8最终包被本机Windows Smart App Control拦截，v0.9不改变Windows信任状态。受控电脑需要受信任签名及目标机复验；保留安全策略，不能保证直接启动。
+在PowerShell中复制整行并回车：
 
-单独 Plugin.zip 提供插件和技能源码，运行时使用完整安装程序准备。宿主客户端、账号与订阅由用户配置。默认执行模式无需额外 Jev API Key。
+```powershell
+npx.cmd --yes "https://github.com/qiluoli-usc/copilot-discussion/releases/download/v0.10.0-preview.1/copilot-discussion-0.10.0-preview.1.tgz" setup
+```
 
-## 文件入口
+等它结束后，打开终端显示的“开始使用.html”，按你的宿主完成连接、Chrome授权和Copilot登录。
 
-- [安装使用](docs/installation.md)：图形安装、授权、恢复与研究提示词。
-- [逐宿主操作指南](docs/host-setup.md)：七个宿主的重新加载、MCP/技能检查和必要的手动接入步骤。
-- [自动接入与回滚](docs/automatic-hosts.md)：增量合并、备份、已支持宿主与需手动导入的例外。
-- [宿主兼容性](docs/compatibility.md)：Codex、Claude Code、WorkBuddy、DSH、QwenWork、GitHub Copilot / VS Code 的接口及实测范围。
-- [主技能](plugins/copilot-discussion/skills/copilot-discussion/SKILL.md) 与 [自动选题技能](plugins/copilot-discussion/skills/research-topics/SKILL.md)。导入时保留完整技能目录。
-- [安装程序源码与构建](installer/README.md)。大型运行时由构建脚本准备，不写进源码目录。
+**不熟悉命令行时，按[一步一步安装说明](docs/installation.md)操作。** 包括打开终端、准备Node.js、接入宿主、开始研究、更新、修复和卸载。当前包从GitHub获取，尚未发布npm公共仓库，请保留命令中的完整网址。
 
-软件安装后从开始菜单“Copilot 主题讨论”打开配置和使用指南。完整问答、证据和阶段计时保存在所选工作区 `output/research-runs/`，不保存在插件缓存内。切换宿主时先暂停原研究，再恢复同一 runFile。
+## 支持哪些AI助手
 
-## 开始研究
+Codex、Claude Code、WorkBuddy、DSH、QwenWork、GitHub Copilot CLI、VS Code GitHub Copilot。安装器按可确认的位置接入MCP和两个技能，保留其他设置与人工修改；QwenWork仍需一次界面导入，DSH按实际启动配置加载。见[七宿主步骤](docs/host-setup.md)。
 
-已自动接入的宿主重新加载后即可使用。QwenWork仍需一次界面MCP导入，DSH需按profile接入overlay；必要的宿主信任、账号登录与组织策略保留。Chrome调试、Allow及Microsoft登录由用户完成。不能保证所有宿主都只剩浏览器授权。连接后可以说：
+它们负责主持研究，讨论对象始终是Microsoft 365 Copilot网页。Chrome授权、Microsoft登录和宿主信任由用户完成。执行层支持Windows本机Chrome，其他系统、容器和云端Agent未适配。
 
-> 用 Jev Native，从免费公开资料自主选题，与 Copilot 持续讨论，不限制轮数，最后给我结论、分歧、完整问答和分阶段实际耗时。
+## 安装后怎么说
 
-资料检索和 Copilot 讨论需要联网；关闭主持任务后不会继续生成新问题。完整安装包不携带构建机的密钥、登录资料、配置或历史研究。
+先让AI助手检查：
 
-项目源码尚未指定开源许可证；第三方组件保留各自原始许可证。
+> 请使用copilot-discussion和research-topics，先调用discussion_doctor检查环境。现在只检查，不开始讨论。
+
+确认后再发：
+
+> 用Jev Native，从免费公开资料自主选一个值得研究的主题，与Microsoft 365 Copilot持续讨论，不限制轮数。最后给我结论、分歧、完整问答和分阶段实际耗时。
+
+保持宿主任务运行；关闭任务后插件不会自己思考下一问。暂停后可读取原记录继续。研究记录默认在用户文件夹的`Documents\CopilotResearch\output\research-runs`，维护和卸载会保留。
+
+## 文件放在哪里
+
+| 目录 | 内容 |
+| --- | --- |
+| `plugins/copilot-discussion/` | npm包、命令入口、两个技能、MCP服务与研究核心 |
+| `docs/` | 给用户看的安装、七宿主步骤及开发说明 |
+| `installer/` | 保留的EXE源码，命令行安装不依赖它 |
+| `scripts/` | 维护者打包入口 |
+| `output/releases/` | 各版本分发文件，旧版保留 |
+| `output/installations/` | 隔离安装与维护验证记录 |
+| `output/research-runs/` | 本工作区历史研究 |
+| `copilot/` | 原项目，保持独立 |
+
+开发接口见[开发说明](docs/development.md)，原EXE方式见[历史说明](docs/legacy-exe.md)。项目源码尚未指定开源许可证，第三方组件保留原许可。

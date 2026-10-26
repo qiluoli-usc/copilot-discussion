@@ -1,8 +1,16 @@
 # 首次安装与环境修复
 
-适用于Windows本机的所有宿主。宿主不需要预装Jev Skill；本包附带所需执行适配。用户希望图形安装时，优先使用配套 `CopilotDiscussion-0.8.0-Setup-win-x64.exe`：双击、选择工作区和宿主、安装后打开使用指南。完整EXE附带独立Node/Python/uv、Jev、锁定wheels和Chrome原始安装包；在目标电脑新建虚拟环境并强制离线，不复制构建机环境。宿主MCP接入、Chrome远程调试、Allow及Microsoft登录仍由用户完成；不能把软件安装成功当作已获浏览器授权。
+适用于Windows本机的所有宿主。宿主不需要预装Jev Skill；本包附带执行适配。当前推荐npm/npx入口，先确认Node20+和npm可用。用户已全局安装时直接运行 `copilot-discussion.cmd setup`；缺少时使用下面的固定发布包，不猜测尚未发布的npm仓库包名：
 
-没有图形安装包时使用下面的脚本；在线自动安装需要网络和本地脚本执行能力，组织策略或浏览器授权可能需要用户操作。
+```powershell
+npx.cmd --yes "https://github.com/qiluoli-usc/copilot-discussion/releases/download/v0.10.0-preview.1/copilot-discussion-0.10.0-preview.1.tgz" setup
+```
+
+安装器检测宿主并准备MCP与完整技能，QwenWork需一次界面导入、DSH需加载实际profile的overlay；以本机“开始使用.html”的逐宿主结果为准。按需补齐Jev、uv、托管Python，不要求Jev API Key。将末尾setup换成doctor、repair、update、uninstall可完成维护；全局安装可直接使用同名短命令。产品复制到固定用户数据目录，不能让MCP引用会被清理的npx缓存。卸载保留研究与共享依赖，人工修改项保留并报告；手动导入的连接先在宿主移除，再用uninstall --manual-disconnected完成。
+
+Chrome远程调试、Allow、Microsoft登录及宿主信任提示仍由用户完成；不能把软件安装成功当作已获浏览器授权。运行doctor --browser前说明会尝试连接Chrome，但不发送研究问题。npx包本身不会在npm安装钩子或MCP握手中下载依赖。
+
+若Node/npm尚不可用，可先按官方方式安装Node.js LTS并重开终端。宿主只有技能文件或需要旧入口时，以下自带脚本保留为备用；在线安装需要网络和本地脚本执行能力，组织策略或浏览器授权可能需要用户操作。
 
 当用户要求安装/修复环境时，通过宿主的终端工具调用本技能内脚本。已连接MCP先doctor；若Node缺失导致MCP都无法启动，直接使用PowerShell入口，不为此重复注册插件。
 

@@ -1,100 +1,111 @@
-# 各宿主首次使用步骤（v0.9.0 预览版）
+# 在你的 AI 软件里启用插件
 
-适用于已用完整 `CopilotDiscussion-0.9.0-Setup-win-x64.exe` 安装的 Windows 10/11 x64 用户。没有预装 Jev Native、Jev技能、Node 或 Python 也可由完整 EXE 准备。安装包不包含 Agent 客户端、账号或订阅。默认无需 Jev API Key。
+适用于 **v0.10.0-preview.1 命令行预览版**。先完成[安装步骤](installation.md)，再只看你使用的软件那一节。“宿主”就是你平时与 AI 聊天的软件；MCP 是它连接本插件工具的方式，技能则告诉它怎样主持研究。
 
-公开测试下载：[v0.9.0-preview.3 宿主说明修订包](https://github.com/qiluoli-usc/copilot-discussion/releases/tag/v0.9.0-preview.3)。本说明更新于2026-10-21。修订包的完整EXE和后续配置向导均内置七宿主步骤；只下载EXE即可离线阅读，无需另外下载HTML。原版 `v0.9.0-preview` 保留原校验值。
+安装程序不会代替你安装这七种 AI 软件，也不会提供它们的账号或订阅。当前执行环境为 Windows 10/11 x64 本机 Chrome，不适用于网页、云端、WSL 或远程容器中的 Agent。
 
 ## 先找到本机配置与状态
 
-1. 安装前先选择“主持宿主”，下方“宿主安装说明”会立即显示对应步骤。自动检测或通用模式先显示安装总览，也可在“查看步骤”里分别查看七宿主说明；查看说明不会更改安装目标。准备好后保留自动合并MCP/安装技能选项，点击“开始安装”。如果宿主首次安装后还没启动过，先正常打开并完成宿主自己的登录，再重新运行配置向导。
-2. 完成后点“使用指南”，看对应宿主那一行的 MCP、两个技能及下一步。显示“已写入/已复用/已准备”的项目无需重复导入；显示需导入、保留或冲突的项目按下文处理。
-3. 点向导“打开目录”，会打开本次生成的配置目录，里面有 `mcp.json`、`codex.toml`、`github-copilot.json`、`vscode-mcp.json`、`dsh.yaml`、`host-integration.json` 和 `开始使用.html`。这些模板包含本机绝对路径，不能直接复制另一台电脑的模板。
-4. 本修订包安装在 `versions/0.9.0-host-guide.2/`，两个技能位于其 `product/plugins/copilot-discussion/skills/` 下，目录名分别是 `copilot-discussion`、`research-topics`。手动导入时保留完整目录及辅助文件；若宿主只接受ZIP，分别将各技能目录的内容打包，使ZIP根级有 `SKILL.md`。安装后的“使用指南”也内置全部步骤，并默认选中本次宿主。
+1. 在终端运行 `copilot-discussion.cmd setup` 后，找到输出中的“开始使用.html”完整路径。复制该路径，粘贴到文件资源管理器地址栏，按回车；也可以用 Chrome 打开它。
+2. 查看你的软件所在行。“已接入”表示连接文件和技能已准备好，**还需要重开软件检查**；“还需操作”请照对应章节处理。没有你的软件时，先安装并正常打开一次它，然后重跑 `setup`。
+3. 说明页面里提供这台电脑专用的连接文件。需要导入时点击 `mcp.json` 等链接，用记事本打开后，按 `Ctrl+A` 全选、`Ctrl+C` 复制。只操作本插件的条目，保留软件里其他连接。
+4. 如需手动导入技能，使用说明页面写出的 `skills` 目录，分别导入 **copilot-discussion**、**research-topics** 两个完整文件夹。不要只复制里面的 `SKILL.md`。若软件只接受 ZIP，分别压缩各文件夹的内容，让 ZIP 最外层包含 `SKILL.md`。
 
-服务器通常名为 `copilot-discussion`。遇到已有同名项时，向导会保留原项并使用独立名称，后续查找请以 `host-integration.json` 的 `serverName` 为准。不要删除其他服务器、覆盖整份用户设置，或同时启用两份指向同一研究的连接。
+只使用 npx、没有安装全局命令的用户：下文的 `copilot-discussion.cmd` 换成安装页里的完整 `npx.cmd --yes "…tgz"` 前缀即可。
+
+服务器一般叫 **copilot-discussion**。若安装时保留了已有同名连接，会另取名称；以说明目录中 `host-integration.json` 的 `serverName` 为准。不要为同一研究同时启用两份连接。
 
 ## Codex
 
-1. 自动接入成功后，重新启动Codex并打开一个新的本地任务，以便读取MCP和技能。只需选择这条自动MCP路线，无需再安装一份原生插件。
-2. MCP写在 `$CODEX_HOME/config.toml`（默认 `~/.codex/config.toml`）的 `mcp_servers` 中；两个技能放在 `~/.agents/skills/`。需要排查时只核对本插件的条目和路径。
-3. 在新任务发送文末的环境检查提示词。CLI用户还可运行 `codex mcp list` 查看服务器是否存在；服务器存在不等于浏览器授权已完成。
-4. 若向导保留了冲突项，在实际使用的Codex配置中合并本次 `codex.toml` 的独立表块，保留其他配置。自定义配置层和组织管理项以当前客户端为准，再重新加载。
+1. 完全退出 Codex，再打开，创建一个新的本地任务。安装程序已准备 MCP 和两个技能，无需再装一份原生插件。
+2. 在新任务中粘贴本页最后的“检查提示词”。如果出现工具授权提示，阅读后确认。
+3. CLI 用户也可在终端运行 `codex mcp list`；应能看到本插件名称。看到名称后仍需在任务里实际检查工具。
+4. 没有工具时，先运行 `copilot-discussion.cmd doctor`，再看安装说明中的状态。默认连接在用户目录的 `.codex/config.toml`，技能在 `.agents/skills`。自定义配置或组织管理的环境，请使用其实际生效配置；不要用生成片段覆盖整份文件。
 
-接口依据：[OpenAI Docs MCP配置](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)、[技能目录](https://learn.chatgpt.com/docs/build-skills)。
+接口依据：[Codex MCP](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)、[技能](https://learn.chatgpt.com/docs/build-skills)。
 
 ## Claude Code
 
-1. 自动接入成功后退出并重新打开Claude Code。该路线将服务器放在 `~/.claude.json` 的用户级 `mcpServers`，技能放在 `~/.claude/skills/`。
-2. 在Claude Code输入 `/mcp`，确认向导报告的服务器名和连接状态；必要的工具信任提示由你确认。再发送文末环境检查提示词。
-3. 自定义 `CLAUDE_CONFIG_DIR` 或冲突被保留时，使用Claude Code自己的MCP配置功能导入本次 `mcp.json` 中该服务器的单个对象。CLI备用方式是 `claude mcp add-json --scope user copilot-discussion '<单个服务器JSON>'`；替换示例内容，不把整个 `mcpServers` 外层传入。
-4. 若技能未自动安装，用宿主的技能方式导入两个完整目录，再重开任务。自动MCP成功时不必另外安装同名插件。
+1. 退出 Claude Code，再重新打开，在输入框输入 `/mcp`。
+2. 找到本插件并按 Claude Code 的提示连接；在聊天框发送本页最后的检查提示词。
+3. 默认连接自动写入用户目录的 `.claude.json`，技能在 `.claude/skills`。无需再导入第二份。
+4. 如果你使用自定义 `CLAUDE_CONFIG_DIR`，安装程序会提示手动导入。打开本机 `mcp.json`，在实际 Claude Code 的用户 MCP 配置中添加其中的本插件服务器对象，保留其他内容；再重新打开。无法确认配置位置时，先使用 Claude Code 的 `/mcp` 管理入口核对。
 
-接口依据：[Claude Code MCP用户作用域与JSON导入](https://code.claude.com/docs/en/mcp)。
+接口依据：[Claude Code MCP](https://code.claude.com/docs/en/mcp)。
 
 ## WorkBuddy
 
-1. 自动接入成功后重启WorkBuddy，在其MCP服务器管理中确认对应服务器已启用，再发送文末检查提示词。
-2. 如需手动处理，打开“插件 → MCP服务器 → 配置MCP”（不同版本入口名称可能变化），把本次 `mcp.json` 的该服务器项合并进去，类型为本地STDIO，命令和参数保留生成的本机路径。
-3. 安装器优先复用已发现的 `~/.workbuddy/.mcp.json`；没有它时使用官方说明的 `~/.workbuddy/mcp.json`。两份同时存在会提示确认；请从WorkBuddy自身的配置入口确定生效位置，不随意删除其中一份。
-4. 在技能管理中确认两个研究技能。若向导未发现技能目录或保留了定制技能，使用本地导入功能导入上面两个完整技能目录，然后重开任务。
+1. 完全退出并重开 WorkBuddy，进入“设置”里的“配置MCP”，查看是否已有本插件。
+2. 有本插件时，按界面提示启用或确认信任，再到聊天框发送检查提示词。
+3. 没有本插件或安装报告提示冲突时，在“配置MCP”里添加本地 STDIO 连接，使用本机 `mcp.json` 中的本插件配置。不同版本界面可能不同；不要删除已有连接，也不要把整份用户配置替换成模板。
+4. 安装程序会复用已发现的 `.workbuddy/.mcp.json` 或 `mcp.json`。两份同时存在时，会让你确认实际使用哪份。
+5. 技能目录已发现时会自动放入两个技能；若报告“需要导入技能”，在 WorkBuddy 的技能管理中导入说明页给出的两个完整技能文件夹。导入后重开任务，再发送检查提示词。
 
-接口依据：[WorkBuddy MCP配置](https://www.workbuddy.ai/docs/zh/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/MCP-Guide)。`.mcp.json`与skills目录另有本机目录元数据观察，未逐一实测不同版本客户端加载。
+接口依据：[WorkBuddy MCP 指南](https://www.workbuddy.ai/docs/zh/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/MCP-Guide)、[技能规范](https://open.workbuddy.cn/docs/skill)。
 
 ## QwenWork（千问办公）
 
-1. 这里仍需一次界面MCP导入：打开桌面客户端的“扩展 → 连接器 → 添加 → 粘贴JSON配置”。
-2. 打开向导生成的 `mcp.json`，复制完整JSON并导入；检查本地STDIO、Node命令和参数均来自当前电脑。若已有同名服务器，保留原项，为本次连接选择不同名称，避免直接覆盖。
-3. 在“已安装”的连接器中启用本次服务器，按客户端提示处理信任并重新打开任务。
-4. 在“扩展 → 技能”确认两个技能；它们会自动准备到 `~/.qwenworkcn/skills/`。若目录未被当前版本读取或已有定制技能被保留，使用本地技能导入功能加载两个完整目录。
-5. 发送文末的环境检查提示词。需使用Windows本地桌面STDIO能力，QwenWork网页或云任务不能直接控制本机Chrome。
+1. 打开 **Windows 桌面版** QwenWork，在“扩展 → 连接器”中选择“添加”，然后选择“粘贴JSON配置”。这一步需要在界面里完成，安装程序不会写内部数据库。
+2. 从本机说明页面打开 `mcp.json`。用记事本全选并复制文件内容，粘贴到连接器导入框，按界面提示保存并启用。
+3. 查看连接器是否列出了本插件；出现信任或工具权限提示时，阅读后确认。
+4. 两个技能已准备到用户目录的 `.qwenworkcn/skills`。重开任务后查看技能列表；若当前版本要求界面导入，就从说明页给出的 `skills` 目录分别导入两个完整文件夹。
+5. 在聊天框发送检查提示词。网页版或云任务不能直接连接本机 Chrome，请使用本地桌面任务。
 
-接口依据：[QwenWork连接器](https://docs.qwenwork.cn/features/connectors)、[技能](https://docs.qwenwork.cn/features/skills)。安装器不修改未公开的内部数据库。
+升级后请用新说明页的配置编辑原连接，再重新连接；已有本插件时不要再新增一份。
+
+接口依据：[QwenWork 连接器](https://docs.qwenwork.cn/features/connectors)、[技能](https://docs.qwenwork.cn/features/skills)。
 
 ## DSH（DeepSeek Harness）
 
-1. 查看向导生成的 `dsh.yaml`，它是带 `insert` 外层的Cordis overlay。原有profile继续保留；不能仅把文件复制到某个目录就当作已经加载。
-2. CLI用户可在启动目标profile时指定这份文件。下面任选实际使用的一种，并将示例路径换成本次生成文件的完整路径：
+1. 在本机说明页找到 `dsh.yaml` 的完整路径。这是启动配置的补充文件，需要在启动你使用的 DSH profile 时加载。
+2. 在终端运行下面**其中一条**。把引号里的路径换成你这台电脑生成的文件路径；网页界面用第一条，终端界面用第二条：
 
 ```powershell
-dsh web --patch "C:\path\to\dsh.yaml"
-dsh tui --patch "C:\path\to\dsh.yaml"
+dsh web --patch "C:\这里换成你的实际目录\dsh.yaml"
+dsh tui --patch "C:\这里换成你的实际目录\dsh.yaml"
 ```
 
-3. 其他自定义profile按官方 `dsh --profile <名称> --patch <文件>` 方式加载；profile需要具备官方MCP client和文件系统技能能力，缺少时按匹配DSH版本的官方说明启用。
-4. 技能会准备到 `$DSH_HOME/skills`（默认 `~/.dsh/skills`）。重新打开任务后检查工具清单，再发送文末检查提示词。
-5. DSH桌面profile由桌面程序管理，不用CLI强行改写其内部profile。本项目没有逐版本核实桌面导入界面，因此此处不承诺桌面版全自动接入；没有可用overlay入口时，先使用上述已公开的CLI流程。
+3. 如果你使用自己命名的 profile，请按 `dsh --profile <名称> --patch <文件>` 加载。该 profile 需要支持官方 MCP client 和文件系统技能；文件复制到目录里并不代表已加载。
+4. 两个技能已准备到 `$DSH_HOME/skills`，默认是用户目录 `.dsh/skills`。打开任务后检查技能和工具，然后发送检查提示词。
+5. 本项目没有逐版本验证 DSH 桌面版的配置导入界面。桌面版无法加载补充配置时，请先使用上面的公开 CLI 方式；不要改写桌面程序的内部配置数据库。
 
-接口依据：[DSH CLI/profile与patch说明](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/cli-help.md)、[MCP client](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/mcp/mcp-client/README.md)、[文件系统技能](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/skill/skill-filesystem/README.md)。
+升级后用新说明页中的 `dsh.yaml` 路径重新启动该 profile，避免继续使用旧版本。
+
+接口依据：[DSH 启动参数](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/cli-help.md)、[MCP client](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/mcp/mcp-client/README.md)、[文件系统技能](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/skill/skill-filesystem/README.md)。
 
 ## GitHub Copilot CLI
 
-1. 重新打开Copilot CLI。在交互输入框输入 `/mcp list`，再用 `/mcp show <向导中的服务器名>` 查看工具。这里的GitHub Copilot是主持Agent，目标网页仍是Microsoft 365 Copilot。
-2. 输入 `/skills list`，确认 `copilot-discussion` 和 `research-topics` 两个技能，再发送文末检查提示词。
-3. 自动配置写入 `$COPILOT_HOME/mcp-config.json`，默认 `~/.copilot/mcp-config.json`，两个技能在同一Copilot根目录的 `skills/`。
-4. 需要手动处理时，合并本次 `github-copilot.json` 的对应服务器对象；本地类型为 `local`。保留其他服务器、现有工具权限和账号设置，然后重启CLI。
+1. 退出并重新打开 Copilot CLI，在它的交互输入框输入 `/mcp list`。
+2. 看到本插件后，输入 `/mcp show copilot-discussion` 查看工具。若报告中的服务器名称不同，使用实际名称。
+3. 输入 `/skills list`，确认有 `copilot-discussion`、`research-topics`，再发送检查提示词。
+4. 默认 MCP 配置位于用户目录 `.copilot/mcp-config.json`，技能在 `.copilot/skills`；设置了 `COPILOT_HOME` 时使用对应目录。若需手动处理，使用生成的 `github-copilot.json`；这里的本地类型为 `local`。
 
-接口依据：[Copilot CLI MCP](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers)、[技能管理](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills)。
+GitHub Copilot CLI 是主持研究的软件，Microsoft 365 Copilot 网页是讨论对象，两者需要各自的账号权限。
+
+接口依据：[Copilot CLI MCP](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers)、[技能](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills)。
 
 ## VS Code GitHub Copilot
 
-1. 确认GitHub Copilot已启用并完成宿主自己的登录。按 `Ctrl+Shift+P` 执行 `Developer: Reload Window`，然后执行 `MCP: List Servers` 查看对应服务器，按提示启动并确认信任。
-2. 打开Copilot Chat，选择Agent模式，启用本插件所需工具，发送文末检查提示词，并要求使用两个研究技能。
-3. 安装器配置的是本地默认用户 `%APPDATA%/Code/User/mcp.json`，顶层为 `servers`；个人技能在 `~/.copilot/skills/`。
-4. 自定义profile或其他本地配置位置：用命令面板的 `MCP: Open User Configuration` 打开实际生效文件，将本次 `vscode-mcp.json` 的服务器项合并到 `servers`，保留其他内容；再重新加载。
-5. MCP子进程必须运行在Windows本机。Remote SSH、WSL、容器和云coding agent不是这个安装器的目标环境，不能只因VS Code窗口在Windows上就当作可以控制本机Chrome。
+1. 确认 VS Code 的 GitHub Copilot 扩展已启用并登录。按 `Ctrl+Shift+P`，搜索并运行 `Developer: Reload Window`（重新加载窗口）。
+2. 再按 `Ctrl+Shift+P`，运行 `MCP: List Servers`，找到本插件，按提示启动并确认信任。
+3. 打开 Copilot Chat，切换到 Agent 模式，在工具列表里启用本插件的工具，然后发送检查提示词。
+4. 自动配置适用于本机默认用户配置 `%APPDATA%/Code/User/mcp.json`。自定义或便携 profile 需要在命令面板运行 `MCP: Open User Configuration`，在实际文件的 `servers` 中添加 `vscode-mcp.json` 里的本插件对象；保留其他内容后重新加载。
+5. 两个技能在用户目录 `.copilot/skills`。这里需要运行在 **Windows 本机** 的 MCP；远程 SSH、WSL、容器和云 coding agent 不能直接访问本机 Chrome。
 
-接口依据：[VS Code MCP配置与命令](https://code.visualstudio.com/docs/agents/reference/mcp-configuration)。
+接口依据：[VS Code MCP 配置](https://code.visualstudio.com/docs/agents/reference/mcp-configuration)。
 
 ## 所有宿主的最后检查
 
-先在Agent中发送：
+先在你的 AI 软件聊天框发送：
 
-> 使用copilot-discussion和research-topics。先调用discussion_doctor检查安装环境，告诉我是否就绪；本次只检查，不创建Copilot讨论。
+> 请使用 copilot-discussion 和 research-topics，先调用 discussion_doctor 检查插件环境。现在只检查，不开始讨论。告诉我是否可以使用。
 
-应能发现11个 `discussion_*` 工具。`doctor.ready`仅代表本地依赖通过；Chrome远程调试、Allow和Microsoft登录仍需在首次浏览器连接时完成。按向导“授权检查”提示操作后，再发送：
+应能发现 11 个 `discussion_*` 工具。环境通过检查后，按照[安装页的浏览器步骤](installation.md)开启 Chrome 调试、手动批准 Allow 并登录 Microsoft 365 Copilot，然后发送：
 
-> 用Jev Native，从免费公开资料自主选题，与Microsoft 365 Copilot持续讨论，不限制轮数，最后给我结论、分歧、完整问答和分阶段实际耗时。
+> 用 Jev Native，从免费公开资料自主选择一个值得研究的主题，与 Microsoft 365 Copilot 持续讨论，不限制轮数，最后给我结论、分歧、完整问答和分阶段实际耗时。
 
-没有工具时先检查对应宿主是否加载了正确配置；不要重复安装一套插件来叠加连接。发生冲突可回到向导查看状态；“撤销接入”仅按校验恢复本次改动，保留后续人工修改、运行环境和研究工作区。完整问答位于所选工作区 `output/research-runs/`。
+研究期间保持任务运行；暂停后可以用原记录继续。同一份研究不要同时交给两个 Agent 控制。完整问答在研究文件夹下的 `output/research-runs/`。
 
-当前EXE未签名，Windows安全策略可能阻止启动；公开下载不会改变签名状态，请保留系统策略。安装器及MCP协议在隔离环境验证，不等于所有宿主客户端已逐一实测。测试反馈请附Windows架构、宿主版本、失败阶段及已脱敏的错误文字，不上传账号配置、浏览器登录资料或宿主备份。
+找不到工具：先重开软件，再运行 `copilot-discussion.cmd doctor` 并查看“开始使用.html”中的宿主状态。`doctor` 检查通过、宿主工具加载成功、浏览器授权和账号登录是三个不同步骤。
+
+七种配置格式和隔离安装可以验证；所有客户端的实际登录与加载仍需对应电脑确认。反馈问题时附 Windows 架构、软件名称和版本、失败步骤及脱敏错误文字即可，不上传账号配置、浏览器登录资料或备份。

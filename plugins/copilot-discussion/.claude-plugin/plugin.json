@@ -1,6 +1,6 @@
 {
   "name": "copilot-discussion",
-  "version": "0.9.0",
+  "version": "0.10.0-preview.1",
   "description": "主持Microsoft 365 Copilot公开主题研究，保留Jev Native、逐轮问答、恢复及计时。",
   "author": { "name": "Copilot Training" },
   "mcpServers": {

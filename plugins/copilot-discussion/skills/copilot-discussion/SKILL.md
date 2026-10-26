@@ -10,7 +10,7 @@ description: 由当前Agent从免费公开资料选题，主持与Microsoft 365 
 ## 路由
 
 - **已提供 `discussion_*` MCP 工具**：先读 [MCP 研究流程](references/mcp-workflow.md)，优先使用标准 MCP。先 `discussion_doctor`，再在搜索前 `discussion_init`。
-- **首次安装、缺少依赖或MCP启动失败**：读 [自动安装](references/installation.md)。使用自带bootstrap检测和补齐环境，不要求宿主预装Jev技能。
+- **首次安装、缺少依赖或MCP启动失败**：读 [自动安装](references/installation.md)。优先使用npm/npx安装维护入口，复用环境并补齐依赖；自带bootstrap保留为备用，不要求宿主预装Jev技能。
 - **用户要求Jev决策对照**：读 [对照实验](references/decision-benchmark.md)，显式授权后单独运行；默认研究模式不调用决策模型。
 - **只有本地脚本或技能**：读 [脚本研究流程](references/research-workflow.md)，配置后使用持久 `research-server.mjs` 或普通 Node 的 `ResearchRun`。该 JSON 行入口不是 MCP。
 - **Jev Native 已有会话或独立浏览器命令**：读 [Native 适配](references/jev-native.md)。保留准确会话 URL、原标签页所有权及 pending，超时只续读。

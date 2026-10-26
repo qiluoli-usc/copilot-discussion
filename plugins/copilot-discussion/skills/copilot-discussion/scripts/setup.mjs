@@ -73,7 +73,7 @@ export async function installSkills({ target, skillsDir, sourceRoot = path.dirna
   return entries.map(name => path.join(destination, name));
 }
 
-export async function setup(options, { prepareEnvironment = ensureEnvironment } = {}) {
+export async function setup(options, { prepareEnvironment = ensureEnvironment, run = runProgram } = {}) {
   const startedAt = Number.isFinite(Date.parse(process.env.COPILOT_DISCUSSION_BOOTSTRAP_STARTED_AT)) ? process.env.COPILOT_DISCUSSION_BOOTSTRAP_STARTED_AT : new Date().toISOString();
   const configFile = options.config || defaultConfigFile();
   if (!path.isAbsolute(configFile)) throw new Error('config 必须是绝对路径。');
@@ -145,7 +145,7 @@ Node：${process.execPath}
   for (const [name, content] of files) await writeOnceOrSame(path.join(outputDir, name), content, options.replace);
   let browser = { checked: false, ready: null, next: '首次运行需在Chrome启用远程调试并点击Allow；Microsoft登录由用户完成。' };
   if (!options['configure-only']) {
-    const chrome = await runProgram('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', path.join(scriptDir, 'chrome-setup.ps1'), ...(options['no-install'] || options['skip-chrome-install'] ? ['-NoInstall'] : []), ...(options['chrome-offline-installer'] ? ['-OfflineInstaller', options['chrome-offline-installer']] : [])], { timeoutMs: 240000 });
+    const chrome = await run('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', path.join(scriptDir, 'chrome-setup.ps1'), ...(options['no-install'] || options['skip-chrome-install'] ? ['-NoInstall'] : []), ...(options['chrome-offline-installer'] ? ['-OfflineInstaller', options['chrome-offline-installer']] : [])], { timeoutMs: 240000 });
     try { browser.chrome = JSON.parse(chrome.output); } catch { browser.chrome = { status: 'needs_action', reason: '无法检测或自动安装Chrome，请手动安装Google Chrome。' }; }
     if (options['check-browser'] && browser.chrome.status === 'installed') {
       options.onProgress?.({ stage: 'browser', action: 'Chrome可能显示Allow；请手动授权，不关闭已有标签页。', at: new Date().toISOString() });

@@ -1,0 +1,10 @@
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
+import { SOURCE } from './manager.mjs';
+import { packageEntries,hash } from './storage.mjs';
+const entries=await packageEntries(SOURCE),meta=JSON.parse(await fs.readFile(path.join(SOURCE,'package.json'),'utf8'));
+for(const relative of ['plugin.json','.codex-plugin/plugin.json','.claude-plugin/plugin.json']) if(JSON.parse(await fs.readFile(path.join(SOURCE,relative),'utf8')).version!==meta.version) throw new Error('发布清单版本不一致：'+relative);
+const vendor=path.join(SOURCE,'skills/copilot-discussion/scripts/vendor'),lock=JSON.parse(await fs.readFile(path.join(vendor,'lock.json'),'utf8'));
+for(const item of lock.files) if(hash(await fs.readFile(path.join(vendor,...item.path.split('/'))))!==item.sha256) throw new Error('第三方文件校验失败');
+if(entries.some(e=>e.path.includes('/output/')||/\.(?:pfx|p12|key)$/u.test(e.path))) throw new Error('包内包含不应发布的文件');
+console.error('npm包结构、版本与第三方校验通过；不会在安装脚本中下载或接入宿主。');

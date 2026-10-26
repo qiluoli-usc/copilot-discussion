@@ -104,14 +104,14 @@ const chooseName = servers => {
   for (const name of ['copilot-discussion', 'copilot-discussion-native', ...Array.from({ length: 98 }, (_, i) => 'copilot-discussion-native-' + (i + 2))]) if (!Object.hasOwn(servers, name)) return name;
   throw new IntegrationError('同名 MCP 太多，未自动创建重复连接。');
 };
-export function mergeJsonConfig(text, server, { format = 'json', key = 'mcpServers', owned } = {}) {
+export function mergeJsonConfig(text, server, { format = 'json', key = 'mcpServers', owned, repairMissing = false } = {}) {
   const doc = jsonDocument(text || '{}\n', format === 'jsonc');
   if (doc.value[key] != null && !object(doc.value[key])) throw new IntegrationError('宿主 MCP 容器不是对象，未自动改写。');
   const servers = doc.value[key] || {};
   let name = owned?.name;
   if (name && Object.hasOwn(servers, name)) {
     if (!object(servers[name]) || !Object.entries(owned.controlled).every(([k, v]) => equal(servers[name][k], v))) throw new IntegrationError('本插件的 MCP 启动项已被手动修改，保留现状。');
-  } else if (name) throw new IntegrationError('之前安装的 MCP 已被移除，保留用户选择，不自动恢复。');
+  } else if (name && !repairMissing) throw new IntegrationError('之前安装的 MCP 已被移除，保留用户选择，不自动恢复。');
   else name = chooseName(servers);
   const formattingOptions = { insertSpaces: true, tabSize: 2, eol: doc.clean.includes('\r\n') ? '\r\n' : '\n' };
   let changed = doc.clean;
@@ -123,7 +123,7 @@ export function mergeJsonConfig(text, server, { format = 'json', key = 'mcpServe
 
 const begin = '# >>> CopilotDiscussion managed MCP';
 const end = '# <<< CopilotDiscussion managed MCP';
-export function mergeTomlConfig(text, server, { owned } = {}) {
+export function mergeTomlConfig(text, server, { owned, repairMissing = false } = {}) {
   let parsed;
   try { parsed = toml.parse(text.replace(/^\uFEFF/u, '')); } catch { throw new IntegrationError('宿主 TOML 语法无效，未自动改写。'); }
   if (parsed.mcp_servers != null && !object(parsed.mcp_servers)) throw new IntegrationError('TOML 的 mcp_servers 不是表，未自动改写。');
@@ -133,7 +133,8 @@ export function mergeTomlConfig(text, server, { owned } = {}) {
     name = owned.name;
     const start = text.indexOf(begin), finish = text.indexOf(end);
     oldBlock = start < 0 || finish < start ? null : text.slice(start, finish + end.length);
-    if (!oldBlock || text.indexOf(begin, start + begin.length) >= 0 || digest(oldBlock) !== owned.blockSha256) throw new IntegrationError('本插件的 TOML 配置块已被修改或移除，保留现状。');
+    if (!oldBlock && repairMissing && !text.includes(begin) && !text.includes(end) && !parsed.mcp_servers?.[name]) oldBlock = null;
+    else if (!oldBlock || text.indexOf(begin, start + begin.length) >= 0 || digest(oldBlock) !== owned.blockSha256) throw new IntegrationError('本插件的 TOML 配置块已被修改或移除，保留现状。');
   } else {
     if (text.includes(begin) || text.includes(end)) throw new IntegrationError('存在未登记的本插件 TOML 块，保留现状。');
     name = chooseName(parsed.mcp_servers || {});
@@ -144,7 +145,7 @@ export function mergeTomlConfig(text, server, { owned } = {}) {
   return { text: changed, owned: { name, blockSha256: digest(block) }, collision: name !== 'copilot-discussion' };
 }
 
-async function skillPlan(source, destination, previous = {}) {
+async function skillPlan(source, destination, previous = {}, repairMissing = false) {
   const files = [];
   const walk = async (folder, relative = '') => {
     await safePath(folder);
@@ -160,7 +161,7 @@ async function skillPlan(source, destination, previous = {}) {
   const changes = [], managed = { ...previous };
   for (const item of files) {
     const file = path.join(destination, ...item.relative.split('/')), before = await read(file);
-    if (!before && previous[item.relative]) throw new IntegrationError('之前安装的技能文件已被移除，保留用户选择，不自动恢复。');
+    if (!before && previous[item.relative] && !repairMissing) throw new IntegrationError('之前安装的技能文件已被移除，保留用户选择，不自动恢复。');
     if (before && digest(before) !== digest(item.value) && (!previous[item.relative] || digest(before) !== previous[item.relative])) throw new IntegrationError('同名研究技能包含用户修改，保留原技能；可从产品目录查看新版。');
     if (!before || digest(before) !== digest(item.value)) changes.push({ file, before, after: item.value });
     // Identical, pre-existing user files are reused without taking ownership.
@@ -170,7 +171,7 @@ async function skillPlan(source, destination, previous = {}) {
 }
 
 function stateRoot(home) { return path.join(home, '.copilot-discussion', 'host-integrations'); }
-export async function integrateHosts({ home = os.homedir(), env = process.env, target = 'auto', server, skillsRoot = path.dirname(here), version = '0.9.0', installSkills = true, detectedHosts, onProgress = () => {}, beforeCommit } = {}) {
+export async function integrateHosts({ home = os.homedir(), env = process.env, target = 'auto', server, skillsRoot = path.dirname(here), version = '0.9.0', installSkills = true, repairMissing = false, detectedHosts, onProgress = () => {}, beforeCommit } = {}) {
   if (!object(server) || !path.isAbsolute(server.command) || !Array.isArray(server.args) || !path.isAbsolute(server.args[0])) throw new IntegrationError('自动接入需要已安装的本机绝对路径服务器。');
   if (!['auto', ...HOSTS.map(h => h.id)].includes(target)) throw new IntegrationError('未知宿主。');
   const base = stateRoot(home), stateFile = path.join(base, 'state.json');
@@ -207,7 +208,7 @@ export async function integrateHosts({ home = os.homedir(), env = process.env, t
           const before = await read(configFile), text = before?.toString('utf8') || '';
           const own = state.configs[configFile];
           const payload = host.id === 'github-copilot' ? { ...server, type: 'local', tools: ['*'] } : server;
-          const merged = spec.format === 'toml' ? mergeTomlConfig(text, payload, { owned: own }) : mergeJsonConfig(text, payload, { owned: own, format: spec.format, key: host.id === 'vscode' ? 'servers' : 'mcpServers' });
+          const merged = spec.format === 'toml' ? mergeTomlConfig(text, payload, { owned: own, repairMissing }) : mergeJsonConfig(text, payload, { owned: own, repairMissing, format: spec.format, key: host.id === 'vscode' ? 'servers' : 'mcpServers' });
           if (text !== merged.text) localChanges.push({ file: configFile, before, after: Buffer.from(merged.text) });
           state.configs[configFile] = merged.owned;
           item.mcp = text === merged.text ? 'reused' : 'configured'; item.configFile = configFile; item.serverName = merged.owned.name;
@@ -217,7 +218,7 @@ export async function integrateHosts({ home = os.homedir(), env = process.env, t
           for (const name of ['copilot-discussion', 'research-topics']) {
             const dest = path.join(host.skillsDir, name);
             if (queued.has(dest)) continue;
-            const plan = await skillPlan(path.join(path.dirname(skillsRoot), name), dest, state.skills[dest]);
+            const plan = await skillPlan(path.join(path.dirname(skillsRoot), name), dest, state.skills[dest], repairMissing);
             localChanges.push(...plan.changes); state.skills[dest] = plan.managed;
           }
           item.skills = 'installed'; item.skillsDir = host.skillsDir;
@@ -277,7 +278,7 @@ export async function restoreHostIntegration({ journalFile, home = os.homedir(),
   const allowed = file => file === path.join(base, 'state.json') || roots.some(h => file === h.configFile || (h.spec.existingConfig && file === path.join(h.root, h.spec.existingConfig)) || inside(h.skillsDir, file));
   const results = [];
   const restore = async entry => {
-    if (!path.isAbsolute(entry.file || '') || !allowed(entry.file) || !/^[a-f0-9]{64}$/u.test(entry.after) || (entry.before !== null && !/^[a-f0-9]{64}$/u.test(entry.before))) throw new IntegrationError('回滚报告包含未知目标。');
+    if (!path.isAbsolute(entry.file || '') || !allowed(entry.file) || (entry.after !== null && !/^[a-f0-9]{64}$/u.test(entry.after)) || (entry.before !== null && !/^[a-f0-9]{64}$/u.test(entry.before))) throw new IntegrationError('回滚报告包含未知目标。');
     const current = await read(entry.file), currentHash = current == null ? null : digest(current);
     if (currentHash === entry.before) return { file: entry.file, status: 'already-restored' };
     if (currentHash !== entry.after) return { file: entry.file, status: 'preserved-user-change' };
@@ -294,6 +295,118 @@ export async function restoreHostIntegration({ journalFile, home = os.homedir(),
   journal.rollback = { at: new Date().toISOString(), results };
   await fs.writeFile(journalFile, json(journal), { mode: 0o600 });
   return { journalFile, status: journal.phase, results };
+}
+
+// Remove only entries and skill files that this installer still owns. Every
+// changed config is backed up; later edits and unrelated servers are retained.
+export async function inspectHostIntegrations({ home = os.homedir(), env = process.env } = {}) {
+  const bytes = await read(path.join(stateRoot(home), 'state.json'));
+  if (!bytes) return { checked: true, issues: [], trackedConfigs: 0, trackedSkills: 0 };
+  const state = JSON.parse(bytes);
+  if (state.schemaVersion !== 1 || !object(state.configs) || !object(state.skills)) throw new IntegrationError('宿主接入登记损坏，请保留备份。');
+  const roots = HOSTS.map(spec => ({ spec, ...hostPaths(spec, { home, env }) })), issues = [];
+  for (const [file, owned] of Object.entries(state.configs)) {
+    const host = roots.find(h => file === h.configFile || (h.spec.existingConfig && file === path.join(h.root, h.spec.existingConfig)));
+    if (!host) { issues.push({ file, status: 'unknown-location' }); continue; }
+    try {
+      const bytes = await read(file);
+      if (!bytes) { issues.push({ file, host: host.spec.id, status: 'missing' }); continue; }
+      const text = bytes.toString('utf8'); let valid;
+      if (host.spec.format === 'toml') {
+        toml.parse(text.replace(/^\uFEFF/u, ''));
+        const start = text.indexOf(begin), finish = text.indexOf(end);
+        valid = start >= 0 && finish >= start && digest(text.slice(start, finish + end.length)) === owned.blockSha256;
+      } else {
+        const doc = jsonDocument(text, host.spec.format === 'jsonc'), entry = doc.value[host.spec.id === 'vscode' ? 'servers' : 'mcpServers']?.[owned.name];
+        valid = object(entry) && Object.entries(owned.controlled).every(([key,value]) => equal(entry[key],value));
+      }
+      if (!valid) issues.push({ file, host: host.spec.id, status: 'changed-or-removed' });
+    } catch { issues.push({ file, host: host.spec.id, status: 'unreadable' }); }
+  }
+  for (const [folder, files] of Object.entries(state.skills)) {
+    if (!roots.some(h => ['copilot-discussion','research-topics'].some(name => folder === path.join(h.skillsDir,name)))) { issues.push({ file: folder, status: 'unknown-location' }); continue; }
+    for (const [relative, sha] of Object.entries(files)) {
+      const file = path.resolve(folder,...relative.split('/'));
+      if (!inside(folder,file)) throw new IntegrationError('技能登记包含越界路径。');
+      const bytes = await read(file);
+      if (!bytes || digest(bytes) !== sha) issues.push({ file, status: bytes ? 'changed' : 'missing' });
+    }
+  }
+  return { checked: true, issues, trackedConfigs: Object.keys(state.configs).length, trackedSkills: Object.keys(state.skills).length };
+}
+
+export async function removeHostIntegrations({ home = os.homedir(), env = process.env, target = 'all' } = {}) {
+  if (!['all', ...HOSTS.map(h => h.id)].includes(target)) throw new IntegrationError('未知宿主。');
+  const base = stateRoot(home), stateFile = path.join(base, 'state.json');
+  if (!await read(stateFile)) return { status: 'removed', changedFiles: 0, preserved: [], journalFile: null };
+  const lockFile = path.join(base, 'integration.lock'); let lock;
+  try { lock = await fs.open(lockFile, 'wx', 0o600); } catch { throw new IntegrationError('已有宿主维护任务，未卸载。'); }
+  try {
+    const initial = await read(stateFile);
+    if (!initial) return { status: 'removed', changedFiles: 0, preserved: [], journalFile: null };
+    const state = JSON.parse(initial);
+    if (state.schemaVersion !== 1 || !object(state.configs) || !object(state.skills)) throw new IntegrationError('宿主接入登记损坏，未卸载。');
+    const all = HOSTS.map(spec => ({ spec, ...hostPaths(spec, { home, env }) }));
+    const selected = all.filter(h => target === 'all' || h.spec.id === target), changes = [], preserved = [];
+    for (const [file, owned] of Object.entries(state.configs)) {
+      const host = selected.find(h => file === h.configFile || (h.spec.existingConfig && file === path.join(h.root, h.spec.existingConfig)));
+      if (!host) { if (target === 'all') preserved.push({ file, reason: '当前宿主位置与登记不一致，请手动核对。' }); continue; }
+      const before = await read(file);
+      if (!before) { delete state.configs[file]; continue; }
+      try {
+        const text = before.toString('utf8'); let after;
+        if (host.spec.format === 'toml') {
+          const parsed = toml.parse(text.replace(/^\uFEFF/u, ''));
+          const start = text.indexOf(begin), endAt = text.indexOf(end), finish = endAt + end.length;
+          if (start < 0 && endAt < 0 && !parsed.mcp_servers?.[owned.name]) { delete state.configs[file]; continue; }
+          if (start < 0 || endAt < start || text.indexOf(begin, start + begin.length) >= 0 || text.indexOf(end, finish) >= 0 || digest(text.slice(start, finish)) !== owned.blockSha256) throw new IntegrationError('本插件的TOML配置块已被修改，保留。');
+          after = text.slice(0, start) + text.slice(finish);
+          toml.parse(after.replace(/^\uFEFF/u, ''));
+        } else {
+          const doc = jsonDocument(text, host.spec.format === 'jsonc'), key = host.spec.id === 'vscode' ? 'servers' : 'mcpServers';
+          const entry = doc.value[key]?.[owned.name];
+          if (entry === undefined) { delete state.configs[file]; continue; }
+          if (!object(entry) || !object(owned.controlled) || !equal(Object.keys(entry).sort(), Object.keys(owned.controlled).sort()) || !Object.entries(owned.controlled).every(([k,v]) => equal(entry[k], v))) throw new IntegrationError('本插件连接已被手动修改，保留。');
+          after = doc.bom + jc.applyEdits(doc.clean, jc.modify(doc.clean, [key, owned.name], undefined, { formattingOptions: { insertSpaces: true, tabSize: 2, eol: text.includes('\r\n') ? '\r\n' : '\n' } }));
+          jsonDocument(after, host.spec.format === 'jsonc');
+        }
+        changes.push({ file, before, after: Buffer.from(after) }); delete state.configs[file];
+      } catch (error) { preserved.push({ file, reason: safeMessage(error) }); }
+    }
+    for (const [folder, files] of Object.entries(state.skills)) {
+      if (!selected.some(h => ['copilot-discussion', 'research-topics'].some(name => folder === path.join(h.skillsDir, name)))) { if (target === 'all') preserved.push({ file: folder, reason: '登记的技能位置不在当前宿主目录中。' }); continue; }
+      for (const [relative, sha] of Object.entries(files)) {
+        const file = path.resolve(folder, ...relative.split('/'));
+        if (!inside(folder, file) || !/^[a-f0-9]{64}$/u.test(sha)) throw new IntegrationError('技能登记包含未知路径，未删除。');
+        const before = await read(file);
+        if (!before) { delete files[relative]; continue; }
+        if (digest(before) !== sha) { preserved.push({ file, reason: '文件已被修改，保留。' }); continue; }
+        changes.push({ file, before, after: null }); delete files[relative];
+      }
+      if (!Object.keys(files).length) delete state.skills[folder];
+    }
+    // Preflight the whole removal. A changed skill may still depend on its
+    // unchanged helper files, so do not leave a half-uninstalled environment.
+    if (preserved.length) return { status: 'needs-action', changedFiles: 0, preserved, journalFile: null };
+    const value = Buffer.from(json(state));
+    if (!value.equals(initial)) changes.push({ file: stateFile, before: initial, after: value, role: 'state' });
+    if (!changes.length) return { status: preserved.length ? 'needs-action' : 'removed', changedFiles: 0, preserved, journalFile: null };
+    const transaction = path.join(base, 'backups', 'remove-' + randomUUID()); await fs.mkdir(transaction, { recursive: true, mode: 0o700 });
+    const journalFile = path.join(transaction, 'journal.json'), journal = { schemaVersion: 1, phase: 'applying', createdAt: new Date().toISOString(), entries: [] }; let journalHash = null;
+    const save = async () => { const data = Buffer.from(json(journal)); await atomic(journalFile, data, journalHash); journalHash = digest(data); };
+    await save();
+    try {
+      for (const item of changes) {
+        const beforeHash = digest(item.before), afterHash = item.after === null ? null : digest(item.after), backup = String(journal.entries.length).padStart(5, '0') + '.bin';
+        await fs.writeFile(path.join(transaction, backup), item.before, { flag: 'wx', mode: 0o600 });
+        journal.entries.push({ file: item.file, before: beforeHash, after: afterHash, backup, role: item.role || 'host' }); await save();
+        if (item.after === null) { const current = await read(item.file); if (!current || digest(current) !== beforeHash) throw new IntegrationError('卸载期间文件发生变化，已停止。'); await fs.unlink(item.file); }
+        else await atomic(item.file, item.after, beforeHash);
+      }
+      journal.phase = 'committed'; await save();
+    } catch (error) { await restoreHostIntegration({ journalFile, home, env }); throw error; }
+    return { status: preserved.length ? 'needs-action' : 'removed', changedFiles: changes.length, preserved, journalFile };
+  } finally { await lock.close(); await fs.unlink(lockFile).catch(() => {}); }
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {

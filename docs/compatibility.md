@@ -1,8 +1,8 @@
 # 宿主兼容性与验证范围
 
-核查日期：2026-10-21。这里的“宿主”指主持研究的 Agent；被操作的对话页面始终是 Microsoft 365 Copilot。GitHub Copilot 与 Microsoft 365 Copilot 是两个角色。
+配置依据核查日期：2026-10-21，命令行预览整理：2026-10-26。这里的“宿主”指主持研究的 Agent；被操作的对话页面始终是 Microsoft 365 Copilot。GitHub Copilot 与 Microsoft 365 Copilot 是两个角色。
 
-v0.9加入宿主检测、MCP增量合并、技能接入和回滚；逐宿主自动化范围见 [自动接入](automatic-hosts.md)。配置格式通过夹具验证不等于所有客户端实际加载通过。QwenWork与DSH仍有明确手动接入步骤。
+v0.10.0-preview.1以npm/npx提供安装、检查、更新、修复和卸载，复用已有宿主检测、MCP增量合并和技能接入；逐宿主自动化范围见 [自动接入](automatic-hosts.md)。配置格式通过夹具验证不等于所有客户端实际加载通过。QwenWork与DSH仍有明确手动接入步骤，详见 [逐步操作](host-setup.md)。
 
 ## 接口选择
 
@@ -18,7 +18,7 @@ v0.9加入宿主检测、MCP增量合并、技能接入和回滚；逐宿主自�
 | GitHub Copilot CLI | MCP、Agent Skills、Agent Plugins 1.0 本地插件 | 根 `plugin.json` / `mcp.json`、`github-copilot.json` | 已核实官方接口；未启动该客户端联调 |
 | VS Code GitHub Copilot 本地 Agent | MCP、Agent Skills | `vscode-mcp.json`，项目或个人 Skills | 已核实官方接口；未启动该客户端联调 |
 
-“官方支持接口”不等于已在所有客户端完成测试。公共MCP已用官方Python SDK核验直接Node及原生插件PowerShell启动入口；宿主版本、企业策略与工具权限仍可能影响加载。v0.7首次安装结果见 本机验证记录（见开发工作区对应记录，离线分发包不携带历史记录），历史协议验证见 v0.6记录（见开发工作区对应记录，离线分发包不携带历史记录）。
+“官方支持接口”不等于已在所有客户端完成测试。公共MCP已用官方Python SDK核验直接Node及原生插件PowerShell启动入口；宿主版本、企业策略与工具权限仍可能影响加载。v0.7首次安装结果见 [本机验证记录](../output/installations/v070/validation.md)，历史协议验证见 [v0.6记录](../output/installations/v060/validation.md)。
 
 ## 已核实的官方依据
 
@@ -46,4 +46,4 @@ v0.7提供显式付费决策实验入口，凭据由既有决策环境加载，�
 
 ## 首次环境准备
 
-所有本地宿主共用同一bootstrap：复用已有环境，缺少时自动安装用户目录中的Node、uv、托管Python与固定版本Jev/依赖，保留浏览器授权。可发现的环境限本包配置、显式路径/环境变量和管理目录；不扫描其他Agent私有目录。Windows x64已做隔离实际安装；arm64提供官方包分支，尚未在arm64电脑实测。Chrome已有环境已实测复用；缺失时的winget安装分支未通过卸载现有Chrome来实测。
+所有本地宿主共用同一bootstrap：复用已有环境，缺少时自动安装用户目录中的uv、托管Python与固定版本Jev/依赖，保留浏览器授权。npm/npx用户先安装Node20+；独立PowerShell备用入口仍能准备Node。可发现的环境限本包配置、显式路径/环境变量和管理目录；不扫描其他Agent私有目录。Windows x64已做隔离实际安装；arm64尚未在对应电脑实测。Chrome已有环境已实测复用；缺失时的winget安装分支未通过卸载现有Chrome来实测。
